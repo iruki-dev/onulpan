@@ -151,6 +151,14 @@ def assemble_edition(conn: psycopg.Connection, user_id: str, as_of_seq: int, now
                  editor_version=e["version"])
 
     last_seq, cursor_at = effective_cursor(conn, user_id, d)
+    if last_seq >= as_of_seq:
+        # 오늘 지면을 이미 열어 커서가 따라잡은 뒤의 재조립(설정 변경): 오늘 지면이 기준으로 삼았던 이전 조간까지만 읽은 것으로 본다
+        prev = conn.execute(
+            """SELECT as_of_seq, created_at FROM editions WHERE user_id = %s AND edition_date < %s
+               ORDER BY edition_date DESC, id DESC LIMIT 1""",
+            (user_id, d),
+        ).fetchone()
+        last_seq, cursor_at = (prev["as_of_seq"], prev["created_at"]) if prev and prev["as_of_seq"] < as_of_seq else (0, None)
     window = timedelta(hours=e["window_hours"])
     pool = conn.execute(
         f"""SELECT {POST_COLS} FROM posts

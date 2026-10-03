@@ -71,4 +71,5 @@ def migrate(conn: psycopg.Connection, directory: Path = MIGRATIONS_DIR) -> list[
             conn.execute(path.read_text(encoding="utf-8"))
             conn.execute("INSERT INTO schema_migrations (name) VALUES (%s)", (path.name,))
         applied.append(path.name)
+    conn.commit()
     return applied

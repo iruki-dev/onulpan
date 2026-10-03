@@ -71,9 +71,16 @@ def test_cursor_excludes_already_read(conn, s, now):
     u = _user(conn)
     first_max = _max_seq(conn)
     conn.execute("INSERT INTO reading_cursors (user_id, last_seq, updated_at) VALUES (%s,%s,%s)", (u, first_max, now))
+    conn.execute("INSERT INTO slugs VALUES ('새-소식','새 소식')")
+    new_seq = conn.execute(
+        """INSERT INTO posts (kind, section, slug, title, summary, body_md, char_count, model, prompt_version, verify_report,
+                              cost_usd, importance, created_at)
+           VALUES ('fact','world','새-소식','새 소식','요약','본문',450,'m','v','{}',0,1,%s) RETURNING seq""",
+        (now + timedelta(hours=1),)).fetchone()["seq"]
     conn.commit()
-    ed = assemble_edition(conn, u, first_max, now + timedelta(hours=2), s)
-    assert ed.sections == [] and ed.briefs == []  # 다 읽었으면 섹션은 비고 1면만 남는다
+    ed = assemble_edition(conn, u, new_seq, now + timedelta(hours=2), s)
+    assert [p["seq"] for p in ed.sections] == [new_seq]  # 이미 연 조간의 글은 다시 싣지 않는다
+    assert ed.briefs == []
 
 
 def test_collection_delay_fallback(conn, s, now):
@@ -124,3 +131,17 @@ def test_culture_slot(conn, s, now):
     topics = triggers.culture_topics(kst_today(now), 7)
     assert topics == triggers.culture_topics(kst_today(now), 7)  # 날짜로 결정된다
     assert len({t["date"] for t in topics}) == 7
+
+
+def test_reassembly_after_reading_keeps_sections(conn, s, now):
+    """설정 변경으로 같은 날 다시 조립해도, 오늘 지면을 연 뒤 앞선 커서 때문에 지면이 비지 않는다."""
+    full_day(conn, s, now)
+    u = _user(conn)
+    first = assemble_edition(conn, u, _max_seq(conn), now, s)
+    save_edition(conn, first)
+    conn.execute("INSERT INTO reading_cursors (user_id, last_seq, updated_at) VALUES (%s,%s,%s)", (u, first.as_of_seq, now))
+    conn.execute("UPDATE user_prefs SET preset = 'short' WHERE user_id = %s", (u,))
+    conn.commit()
+    again = assemble_edition(conn, u, first.as_of_seq, now + timedelta(minutes=5), s)
+    assert again.sections, again.slots()
+    assert len(again.front) == 2

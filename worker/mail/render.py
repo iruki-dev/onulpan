@@ -47,7 +47,7 @@ def render_edition(conn: psycopg.Connection, edition_id: int) -> RenderedEmail:
     base = site_url()
     date_str = f"{ed['edition_date'].month}월 {ed['edition_date'].day}일"
     unsub = f"{base}/unsubscribe?token={sign('unsub', str(ed['user_id']))}"
-    web = f"{base}/?d={ed['edition_date']}&e={edition_id}&utm_source=email"
+    web = f"{base}/e/{edition_id}?utm_source=email"
 
     h: list[str] = []
     t: list[str] = []
