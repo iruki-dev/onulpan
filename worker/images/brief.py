@@ -10,7 +10,8 @@ from dataclasses import asdict, dataclass
 
 import psycopg
 
-from ..generate.gateway import LLMClient, record_call
+from ..generate.gateway import LLMClient
+from ..generate.models import light_call
 from ..generate.prompts import load_prompt, parse_json_output
 from ..nlp import proper_nouns
 from ..settings import Settings
@@ -60,15 +61,8 @@ def rule_brief(post: dict, display_name: str | None = None) -> Brief:
 def llm_brief(conn: psycopg.Connection, llm: LLMClient, s: Settings, post: dict) -> Brief | None:
     user = f"<post>\n제목: {post['title']}\n요약: {post.get('summary') or ''}\n분야: {post['section']}\n" \
            f"본문 앞부분: {(post.get('body_md') or '')[:500]}\n</post>"
-    params = {"model": s["images"]["brief_model"], "max_tokens": 300, "system": load_prompt("image.v1"),
-              "messages": [{"role": "user", "content": user}]}
-    try:
-        res = llm.create(params)
-    except RuntimeError as e:
-        log.warning("image brief failed: %s", e)
-        return None
-    record_call(conn, "image_brief", res)
-    if not res.ok:
+    res = light_call(conn, llm, s, "image_brief", load_prompt("image.v1"), user, 300)
+    if res is None or not res.ok:
         return None
     try:
         d = parse_json_output(res.text)

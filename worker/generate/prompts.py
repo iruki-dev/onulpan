@@ -214,19 +214,21 @@ def build_params(kind: str, user_text: str, s: Settings, retry: dict | None = No
         failures = "\n".join(f"- {f['rule']}: {f['message']}" for f in retry["failures"])
         messages.append({"role": "assistant", "content": retry["previous"] or "{}"})
         messages.append({"role": "user", "content": load_prompt(RETRY_VERSION).replace("{failures}", failures)})
+    from .models import apply_thinking, resolve
+
     params: dict = {
-        "model": g["model"],
+        "model": resolve(g["model"], s),
         "max_tokens": int(g["max_tokens"][kind]),
         "system": [{"type": "text", "text": system_prompt(), "cache_control": {"type": "ephemeral"}}],
         "messages": messages,
     }
-    if g.get("thinking") == "disabled":
-        params["thinking"] = {"type": "disabled"}
     if g.get("structured_output"):
         from .schema import json_schema_for
 
         params["output_config"] = {"format": {"type": "json_schema", "schema": json_schema_for(kind)}}
-    return params
+    # 생각 끔/켬과 노력 수준을 모델이 받는 형태로 (generate/models.py)
+    return apply_thinking(params, mode=g.get("thinking", "disabled"), effort=g.get("effort"),
+                          headroom=int(g.get("thinking_headroom", 0)))
 
 
 def parse_json_output(text: str) -> dict:

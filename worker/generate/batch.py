@@ -14,7 +14,8 @@ import psycopg
 from ..db import jsonb, log_decision
 from ..settings import Settings
 from . import prompts
-from .gateway import LLMClient, LLMResult, budget_state, record_call
+from .gateway import LLMClient, LLMResult, ModelUnavailable, budget_state, record_call
+from .models import mark_retired, resolve
 
 log = logging.getLogger(__name__)
 
@@ -141,6 +142,12 @@ def submit_pending(conn: psycopg.Connection, llm: LLMClient, s: Settings, now: d
             conn.commit()
             try:
                 result = llm.create(params)
+            except ModelUnavailable as e:
+                # 모델 은퇴(404): 대체 모델을 기억하고 대기열로 되돌린다. 다음 제출부터 대체 모델로 나간다
+                mark_retired(conn, e.model, s)
+                conn.execute("UPDATE generation_requests SET status='pending', submitted_at=NULL WHERE id=%s", (req["id"],))
+                conn.commit()
+                break
             except RuntimeError as e:
                 # API 장애: 생성만 멈춘다. 대기열로 되돌린다.
                 log.warning("immediate call failed: %s", e)
@@ -156,6 +163,10 @@ def submit_pending(conn: psycopg.Connection, llm: LLMClient, s: Settings, now: d
     if batch_reqs:
         try:
             batch_id = llm.batch_create(batch_reqs)
+        except ModelUnavailable as e:
+            mark_retired(conn, e.model, s)
+            conn.commit()
+            return stats
         except RuntimeError as e:
             log.warning("batch submit failed: %s", e)
             conn.commit()
@@ -202,7 +213,9 @@ def collect_batches(conn: psycopg.Connection, llm: LLMClient, s: Settings, now: 
             req = by_custom.get(custom_id)
             if req is None:
                 continue
-            if not result.ok and result.error in ("errored", "expired", "canceled"):
+            if not result.ok and result.error == "model_unavailable":
+                mark_retired(conn, resolve(s["generate"]["model"], s), s)
+            if not result.ok and result.error in ("errored", "expired", "canceled", "model_unavailable"):
                 # 서버 쪽 실패는 재제출 대상 (검증 실패가 아니다)
                 conn.execute("UPDATE generation_requests SET status='pending', batch_id=NULL WHERE id=%s", (req["id"],))
                 continue

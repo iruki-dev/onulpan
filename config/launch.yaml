@@ -2,13 +2,13 @@
 mode: launch
 
 cluster:
-  gray_llm: true                      # 회색 구간만 Haiku
+  gray_llm: true                      # 회색 구간만 models.light로
 
 select:
   daily_cap: 150
 
 verify:
-  semantic_llm: true                  # V11 의미 대조 (Haiku 4.5)
+  semantic_llm: true                  # V11 의미 대조 (models.light)
 
 review:
   enabled: false                      # 4주 연속 반려율 1% 미만 확인 후 사람 검토 해제

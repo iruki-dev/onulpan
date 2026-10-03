@@ -59,6 +59,14 @@ def cost_usd(model: str, u: Usage, batch: bool = False) -> float:
     return round(c * (BATCH_DISCOUNT if batch else 1.0), 5)
 
 
+class ModelUnavailable(RuntimeError):
+    """모델이 없음(404): 은퇴했거나 이름이 틀렸다. generate/models.py가 대체 모델로 바꿔 부른다."""
+
+    def __init__(self, model: str, detail: str = ""):
+        super().__init__(f"model unavailable: {model} {detail}".strip())
+        self.model = model
+
+
 class LLMClient(Protocol):
     def create(self, params: dict) -> LLMResult: ...
     def batch_create(self, requests: list[tuple[str, dict]]) -> str: ...
@@ -107,6 +115,8 @@ class AnthropicLLM:
             msg = self.client.messages.create(**params)
         except self._anthropic.BadRequestError as e:
             return LLMResult(text="", model=params["model"], ok=False, error=f"bad_request: {e}")
+        except self._anthropic.NotFoundError as e:
+            raise ModelUnavailable(params["model"], str(e)) from e
         except self._anthropic.APIStatusError as e:
             raise RuntimeError(f"llm status {e.status_code}: {e}") from e
         except self._anthropic.APIConnectionError as e:
@@ -119,9 +129,14 @@ class AnthropicLLM:
         from anthropic.types.message_create_params import MessageCreateParamsNonStreaming
         from anthropic.types.messages.batch_create_params import Request
 
-        batch = self.client.messages.batches.create(
-            requests=[Request(custom_id=cid, params=MessageCreateParamsNonStreaming(**p)) for cid, p in requests]
-        )
+        try:
+            batch = self.client.messages.batches.create(
+                requests=[Request(custom_id=cid, params=MessageCreateParamsNonStreaming(**p)) for cid, p in requests]
+            )
+        except self._anthropic.NotFoundError as e:
+            raise ModelUnavailable(requests[0][1]["model"], str(e)) from e
+        except self._anthropic.APIStatusError as e:
+            raise RuntimeError(f"batch status {e.status_code}: {e}") from e
         return batch.id
 
     def batch_status(self, batch_id: str) -> str:
@@ -135,7 +150,9 @@ class AnthropicLLM:
                 yield r.custom_id, LLMResult(text=_text_of(m), model=m.model, usage=_usage_of(m),
                                              stop_reason=m.stop_reason, ok=ok, error=None if ok else "refusal")
             else:
-                yield r.custom_id, LLMResult(text="", model="", ok=False, error=r.result.type)
+                err = getattr(getattr(getattr(r.result, "error", None), "error", None), "type", None)
+                yield r.custom_id, LLMResult(text="", model="", ok=False,
+                                             error="model_unavailable" if err == "not_found_error" else r.result.type)
 
     def batch_cancel(self, batch_id: str) -> None:
         self.client.messages.batches.cancel(batch_id)

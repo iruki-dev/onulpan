@@ -8,6 +8,7 @@
     python -m worker.jobs.cli sync-outlets
     python -m worker.jobs.cli sync-image-sources # rules/image_sources.yaml → image_sources
     python -m worker.jobs.cli images            # 최근 글의 대표 이미지 찾기
+    python -m worker.jobs.cli compare-models claude-sonnet-5 claude-sonnet-5-5 [--n 10] [--yes]  # 생성 모델 비교
     python -m worker.jobs.cli seed-demo         # 개발용: 가상 기사·글로 웹을 띄워 볼 수 있게
     python -m worker.jobs.cli alert backup_failed "메시지"
 """
@@ -20,6 +21,7 @@ import sys
 import time
 
 from ..db import connect, migrate
+from ..generate.models import load_retired
 from ..settings import settings
 from ..timeutil import kst, now as utcnow
 from . import queue, tasks
@@ -55,6 +57,7 @@ def _with_lock(conn, name: str, fn):
 def run_task(name: str) -> dict:
     s = settings()
     with connect() as conn:
+        load_retired(conn)                  # 이전 실행에서 404로 확인한 모델은 처음부터 대체 모델로
         return _with_lock(conn, name, lambda: TASKS[name](conn, s, utcnow()))
 
 
@@ -107,6 +110,9 @@ def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(prog="worker")
     ap.add_argument("command")
     ap.add_argument("rest", nargs="*")
+    ap.add_argument("--n", type=int, default=10, help="compare-models: 비교할 최근 생성 요청 수")
+    ap.add_argument("--kinds", default="fact,synthesis,issue", help="compare-models: 글 종류")
+    ap.add_argument("--yes", action="store_true", help="compare-models: 실제로 호출한다 (없으면 예상 비용만)")
     args = ap.parse_args(argv)
     cmd = args.command
     s = settings()
@@ -134,6 +140,7 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     if cmd == "run-jobs":
         with connect() as conn:
+            load_retired(conn)
             queue.run_forever(conn, s, tasks.handle_job)
         return 0
     if cmd == "scheduler":
@@ -159,6 +166,29 @@ def main(argv: list[str] | None = None) -> int:
         text = " ".join(args.rest[1:]) or kind
         with connect() as conn:
             alerts.alert(conn, kind, kst(utcnow()).strftime("%Y-%m-%dT%H"), text)
+        return 0
+    if cmd == "compare-models":
+        from ..ops import compare
+        from ..process.embed import get_embedder
+
+        if len(args.rest) < 1:
+            ap.error("compare-models 모델[@생각/노력] …  예: claude-sonnet-5 claude-sonnet-5-5")
+        variants = [compare.parse_variant(x, s) for x in args.rest]
+        est = compare.estimate_usd(variants, args.n)
+        with connect() as conn:
+            ok, msg = compare.budget_ok(conn, s, est)
+            print(f"{len(variants)}개 설정 × 최근 {args.n}편 · {msg} (즉시 호출 정가 기준)")
+            if not ok:
+                return 1
+            if not args.yes:
+                print("실제로 비교하려면 --yes를 붙이세요.")
+                return 0
+            llm = tasks.get_llm()
+            if llm is None:
+                print("ANTHROPIC_API_KEY가 없습니다.")
+                return 1
+            out = compare.run(conn, s, llm, get_embedder(), args.rest, args.n, args.kinds.split(","), utcnow())
+            print(json.dumps(out, ensure_ascii=False, default=str, indent=2))
         return 0
     if cmd == "seed-demo":
         from ..dev.demo import seed

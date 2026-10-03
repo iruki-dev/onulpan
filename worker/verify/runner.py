@@ -10,7 +10,8 @@ from typing import Callable
 
 import psycopg
 
-from ..generate.gateway import LLMClient, record_call
+from ..generate.gateway import LLMClient
+from ..generate.models import light_call
 from ..generate.prompts import load_prompt, parse_json_output
 from ..settings import Settings
 from .base import Context, RuleResult
@@ -60,19 +61,8 @@ def make_semantic_judge(conn: psycopg.Connection, llm: LLMClient, s: Settings) -
     def judge(facts: list[str], sources: list[str]) -> list[dict] | None:
         user = "<facts>\n" + "\n".join(f"{i}. {f}" for i, f in enumerate(facts)) + "\n</facts>\n<sources>\n" + \
                "\n\n".join(sources) + "\n</sources>"
-        params = {
-            "model": s["verify"]["semantic_model"],
-            "max_tokens": 1024,
-            "system": load_prompt("semantic.v1"),
-            "messages": [{"role": "user", "content": user}],
-        }
-        try:
-            res = llm.create(params)
-        except RuntimeError as e:
-            log.warning("semantic judge failed: %s", e)
-            return None
-        record_call(conn, "verify", res)
-        if not res.ok:
+        res = light_call(conn, llm, s, "verify", load_prompt("semantic.v1"), user, 1024)
+        if res is None or not res.ok:
             return None
         try:
             return list(parse_json_output(res.text).get("unsupported") or [])
@@ -86,13 +76,9 @@ def make_gray_judge(conn: psycopg.Connection, llm: LLMClient, s: Settings) -> Ca
     """3단계 회색 구간 판정 (출시 모드)."""
     def judge(article: str, titles: list[str]) -> bool | None:
         user = f"<news_a>\n{article[:800]}\n</news_a>\n<news_b>\n" + "\n".join(titles) + "\n</news_b>"
-        params = {"model": s["verify"]["semantic_model"], "max_tokens": 64,
-                  "system": load_prompt("gray.v1"), "messages": [{"role": "user", "content": user}]}
-        try:
-            res = llm.create(params)
-        except RuntimeError:
+        res = light_call(conn, llm, s, "cluster_gray", load_prompt("gray.v1"), user, 256)
+        if res is None or not res.ok:
             return None
-        record_call(conn, "cluster_gray", res)
         try:
             return bool(parse_json_output(res.text).get("same_event"))
         except (ValueError, json.JSONDecodeError):

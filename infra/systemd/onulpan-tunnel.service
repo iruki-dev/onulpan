@@ -1,0 +1,25 @@
+[Unit]
+Description=오늘판 공개 주소: Cloudflare Tunnel (https://onulpan.kr → 127.0.0.1:3000)
+# 서버에 들어오는 포트를 열지 않는다. cloudflared가 Cloudflare로 나가는 연결만 만들고, HTTPS는 Cloudflare가 끝낸다.
+# 터널 경로(공개 호스트 이름 → http://127.0.0.1:3000)는 Cloudflare 대시보드에 저장된다(원격 관리 터널).
+# 그래서 서버를 옮길 때는 같은 TUNNEL_TOKEN으로 이 서비스만 켜면 되고, DNS는 바꾸지 않는다.
+After=network-online.target onulpan-web.service
+Wants=network-online.target
+PartOf=onulpan.target
+
+[Service]
+Type=notify
+EnvironmentFile=/etc/onulpan.env
+# 다른 비밀값(DB 주소, API 키)은 넘기지 않고 터널 토큰만 cloudflared에 준다
+ExecStart=/bin/sh -c 'test -n "$$TUNNEL_TOKEN" || { echo "TUNNEL_TOKEN이 비어 있습니다 (/etc/onulpan.env)" >&2; exit 1; }; exec env -i TUNNEL_TOKEN="$$TUNNEL_TOKEN" NOTIFY_SOCKET="$$NOTIFY_SOCKET" /usr/bin/cloudflared --no-autoupdate tunnel run'
+DynamicUser=yes
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+Restart=on-failure
+RestartSec=5
+TimeoutStartSec=0
+
+[Install]
+WantedBy=onulpan.target

@@ -36,7 +36,7 @@ onulpan/
 | 3 임베딩·묶기 | `worker/process/embed.py`, `cluster.py` | bge-m3(로컬 CPU). 0.82 합류 / 0.70~0.82 회색 구간(고유명사 2개 공유 + 12시간) / 미만 새 묶음 |
 | 4 선정 | `worker/process/select.py`, `importance.py` | 매체 2곳, 24시간, 안정화, 하루 상한, 상위 5·속보성은 즉시 호출 |
 | 5 생성 | `worker/generate/prompts.py`, `batch.py`, `gateway.py` | Message Batches(50%), 시스템 프롬프트 캐시, 예산 차단기(80% 알림·100% 중단), 24시간 배치 타임아웃 → 즉시 재제출 |
-| 6 검증 | `worker/verify/` | V1~V10 규칙, V11(출시 모드, Haiku 4.5) |
+| 6 검증 | `worker/verify/` | V1~V10 규칙, V11(출시 모드, `models.light` — 지금은 Haiku 4.5) |
 | 7 게시·링크 | `worker/publish/commit.py`, `links.py` | 한 트랜잭션. slug_aliases 사전 매칭으로만 링크 |
 | 8 후속 트리거 | `worker/publish/triggers.py` | 종합(3편 또는 7일), 해설(14일·3편, 하루 상한), 쟁점(disputed + 매체군 3), 교양(일요일 7편) |
 | 편집기 | `worker/editor/assemble.py`, `front_page.py` | 프리셋 3종, 1면 공통, 40% 상한, 5개 섹션 바닥, novelty, 단신, 오늘의 배경, 교양, 결정성 |
@@ -85,9 +85,17 @@ cd web && npm test && npx tsc --noEmit
 
 ## 운영
 
-- **설치·서버 이전(목표 1시간)**: `infra/bootstrap.sh` → `/etc/onulpan.env` 작성(`.env.example`) → `infra/restore.sh` → `systemctl start onulpan.target` → Cloudflare DNS 전환.
+- **설치**: `infra/bootstrap.sh` → `/etc/onulpan.env` 작성(`.env.example`, 값 뒤에 주석 금지 — `infra/check-env.sh`가 검사하고 `--fix`로 고친다) → (이전이면) `infra/restore.sh` → `systemctl start onulpan.target`.
+- **공개 주소 (Cloudflare Tunnel)**: 서버는 들어오는 포트를 열지 않는다. 웹은 `127.0.0.1:3000`에만 열려 있고, `onulpan-tunnel.service`(cloudflared)가 Cloudflare로 나가는 연결을 만들어 HTTPS를 받는다. 처음 한 번:
+  1. Cloudflare 대시보드 → Zero Trust → Networks → Tunnels → 터널 만들기(Cloudflared). 설치 명령에 나오는 토큰만 복사해 `/etc/onulpan.env`의 `TUNNEL_TOKEN`에 넣는다(설치 명령은 실행하지 않는다 — bootstrap이 설치했다).
+  2. 같은 터널의 Public Hostname에 `onulpan.kr`(필요하면 `www`도) → 서비스 `HTTP` · `127.0.0.1:3000`. `localhost`가 아니라 `127.0.0.1`로 적는다(웹이 IPv4에만 열려 있다). 기존 A 레코드가 있으면 지운다.
+  3. `systemctl restart onulpan-tunnel` → 대시보드에서 터널이 Healthy인지, `https://onulpan.kr`이 열리는지 확인.
+- **서버 이전(목표 1시간)**: 터널 경로는 Cloudflare에 저장되어 있어 DNS를 바꾸지 않는다. 같은 터널을 두 서버에서 동시에 켜면 요청이 양쪽으로 나뉘어 DB가 갈라지므로 순서를 지킨다.
+  1. 새 서버: `infra/bootstrap.sh`, 옛 서버의 `/etc/onulpan.env`를 그대로 옮긴다(DB 암호는 bootstrap이 출력한 새 값으로).
+  2. 옛 서버: `systemctl stop onulpan.target 'onulpan-*.timer'` → `systemctl start onulpan-backup.service`(마지막 덤프와 이미지를 R2로).
+  3. 새 서버: `infra/restore.sh` → 안내대로 `systemctl start onulpan.target`과 타이머. 옛 서버는 `systemctl disable onulpan.target onulpan-tunnel.service`.
 - **DB 역할**: 마이그레이션이 `app_writer`(워커)·`app_reader`(웹)를 만들고, bootstrap이 로그인 역할 `onulpan_worker`·`onulpan_web`을 각각에 넣는다. 두 역할 모두 추가 전용 테이블을 고치거나 지울 수 없다.
-- **모드 전환**: `ONULPAN_MODE=launch` — 회색 구간 Haiku, V11 의미 대조, 하루 150편, 사람 검토 해제, 예산 $400.
+- **모드 전환**: `ONULPAN_MODE=launch` — 회색 구간 판정(`models.light`), V11 의미 대조, 하루 150편, 사람 검토 해제, 예산 $400.
 - **편집 규칙 바꾸기**: 금지 표현·용어·매체는 `rules/`에 한 줄 고치고 커밋. 편집기 규칙을 바꾸면 `config/*.yaml`의 `editor.version`을 올린다.
 - **관리 화면**: `/admin/today`(초안 검토·파이프라인·규칙별 실패율·비용·독자), `/admin/reports`(제보·정정 글), `/admin/outlets`(언론사 제외 요청), `/admin/invites`, `/admin/images`(이미지 승인·직접 등록·권리자 요청 처리).
 - **이미지**: 출처 목록·분야별 순서는 `rules/image_sources.yaml`을 고치고 `sync-image-sources`. 파일은 `IMAGE_DIR`(웹과 워커가 같은 경로)에 쌓이고 R2 백업에 함께 올라간다. 자체 그래픽은 `fonts-noto-cjk`(또는 `IMAGE_FONT`)가 필요하다. 스톡 출처는 `UNSPLASH_ACCESS_KEY`·`PEXELS_API_KEY`·`PIXABAY_API_KEY`가 있을 때만 쓴다.
@@ -95,7 +103,10 @@ cd web && npm test && npx tsc --noEmit
 
 ## 구현하며 정한 것
 
-- **모델**: 설계서의 ‘Sonnet 5’는 `claude-sonnet-5`, ‘Haiku 4.5’는 `claude-haiku-4-5`. 비용 계산($2/$10, $1/$5 per MTok, 배치 50%)은 `worker/generate/gateway.py`. 출력 토큰을 설계서 추정(1,200)에 맞추려고 thinking은 끈다(`generate.thinking`). JSON 강제(`structured_output`)는 설정으로 켤 수 있다.
+- **모델**: 생성은 `generate.model`(지금 `claude-sonnet-5`), 짧은 판정 호출(V11·회색 구간·이미지 검색어·사진 대조)은 `models.light`(지금 `claude-haiku-4-5`). 비용 계산($2/$10, $1/$5 per MTok, 배치 50%)은 `worker/generate/gateway.py`. 출력 토큰을 설계서 추정(1,200)에 맞추려고 생각은 끈다(`generate.thinking: disabled`). JSON 강제(`structured_output`)는 설정으로 켤 수 있다.
+  - **모델별 요청 형태**는 `worker/generate/models.py` 한곳에서 맞춘다. 같은 설정 ‘생각 끔’이 Sonnet 5에는 `thinking: disabled`, Sonnet 5.5에는 `between_tools`(Sonnet 5.5는 `disabled`를 400으로 거절), Haiku 4.5에는 생략(effort도 보내지 않음)으로 나간다. 그래서 모델 이름만 바꾸면 된다.
+  - **Sonnet 5.5로 바꾸기 전에**: 같은 가격($2/$10)의 최신 Sonnet이지만 첫 실제 API 테스트에서 견준 뒤 정한다. `python -m worker.jobs.cli compare-models claude-sonnet-5 claude-sonnet-5-5 claude-sonnet-5-5@adaptive/low --n 10` 로 예상 비용을 보고 `--yes`로 실행하면, 최근 생성 요청의 입력을 그대로 각 설정에 보내 검증 통과율·분량 범위·출력 토큰·한 편 비용을 `reports/model-compare-*.md`로 남긴다(게시하지 않는다). 통과율이 같거나 높고 분량이 범위 안이면 `config/beta.yaml`의 `generate.model`을 바꾼다.
+  - **Haiku 4.5 대체**: 운영 검토에 따르면 은퇴일이 ‘2026-10-15 이후’로 공지되어 곧 날짜가 정해질 수 있다. 대체 모델은 `models.fallbacks`에 `claude-sonnet-5-5`로 정해 두었다(Haiku 다음 세대가 없어 같은 가격대의 가장 가까운 모델; 판정 호출 비용은 토큰당 2배). 모델이 404를 돌려주면 그 자리에서 대체 모델로 바꿔 부르고 텔레그램으로 한 번 알리며, 이후 실행도 대체 모델로 나간다. 은퇴가 공지되면 `models.retired`에 적거나 `models.light`를 바꾼다. 생성 모델(`claude-sonnet-5`)도 같은 장치로 `claude-sonnet-5-5`로 넘어간다.
 - **정정 글**은 LLM이 아니라 창업자가 관리 화면에서 쓴다(`model='human'`). 원래 글의 출처를 그대로 잇는다.
 - **교양 글**은 언론 보도를 입력으로 쓰지 않으므로 V2·V3·V5·V7·V9를 건너뛴다(검증 기록에 사유가 남는다). V7은 원문 기사를 입력으로 쓰는 글(사실·쟁점)에만 적용한다.
 - **베타 검토 창구**: 낮에 만들어진 초안도 다음 날 06:20 자동 게시 또는 승인 때까지 drafts에 머문다. 아침 조간에는 모두 실린다.
@@ -118,4 +129,5 @@ cd web && npm test && npx tsc --noEmit
 - 실제 API로 한 번 돌려 보기: 이 저장소의 생성·검증 흐름은 가짜 LLM으로만 끝에서 끝까지 확인했다. bge-m3 실제 임베딩에서 묶기 임계값(0.82/0.70)과 V10(0.75)을 첫 주 표본으로 다시 맞춰야 한다
 - 비활성 매체 11곳의 RSS 주소 확인, 인터넷뉴스서비스사업 등록, 개인정보 처리방침 법무 검토, 편집 원칙의 책임자 이름·연락처(`FOUNDER_NAME`, `FOUNDER_EMAIL`)
 - 구글 서치콘솔·네이버 서치어드바이저 등록 (`/sitemap.xml`, `/robots.txt`는 준비됨)
+- Cloudflare Tunnel 만들기와 `TUNNEL_TOKEN` (README ‘운영’), 첫 실제 API 테스트에서 `compare-models`로 생성 모델 결정
 - 이미지: Unsplash·Pexels·Pixabay API 키 발급, Wikimedia Commons API 접근 확인(이 개발 환경에서는 403), 공공누리·기업 뉴스룸에서 자주 쓸 기관의 보도용 이미지 등록

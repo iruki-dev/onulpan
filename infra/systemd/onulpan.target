@@ -1,6 +1,6 @@
 [Unit]
-Description=오늘판 (웹, 작업 큐, 타이머)
-Wants=onulpan-web.service onulpan-jobs.service
+Description=오늘판 (웹, 작업 큐, 공개 주소 터널)
+Wants=onulpan-web.service onulpan-jobs.service onulpan-tunnel.service
 After=postgresql.service
 
 [Install]

@@ -12,7 +12,7 @@ import psycopg
 
 log = logging.getLogger(__name__)
 
-KINDS = {"collect_zero", "assemble_failed", "front_short", "budget_80", "backup_failed", "image_request"}
+KINDS = {"collect_zero", "assemble_failed", "front_short", "budget_80", "backup_failed", "image_request", "model_retired"}
 
 
 def _deliver(text: str) -> bool:

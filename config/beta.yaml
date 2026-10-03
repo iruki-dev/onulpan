@@ -21,7 +21,7 @@ cluster:
   window_hours: 48                    # 48시간 이내 열린 묶음
   gray_shared_nnp_min: 2
   gray_max_gap_hours: 12
-  gray_llm: false                     # 출시 모드에서만 Haiku로 판정
+  gray_llm: false                     # 출시 모드에서만 models.light로 판정
   rep_articles: 5                     # 회색 구간 고유명사 비교에 쓰는 대표 기사 수
   close_after_hours: 48
 
@@ -40,15 +40,28 @@ generate:
   max_articles: 6
   article_chars: 1500
   related_posts: 3
+  # 생성 모델. claude-sonnet-5-5(같은 가격)로 바꾸기 전에 compare-models로 분량·비용·검증 통과율을 비교한다 (README ‘모델’)
   model: claude-sonnet-5
   max_tokens: { fact: 1500, synthesis: 2200, issue: 2500, explainer: 2000, culture: 2200, correction: 1500 }
-  thinking: disabled                  # adaptive | disabled
+  # disabled | adaptive. 모델별 형태는 worker/generate/models.py가 맞춘다 (Sonnet 5.5는 disabled → between_tools)
+  thinking: disabled
+  effort: null                        # low | medium | high (비우면 모델 기본값)
+  thinking_headroom: 4000             # adaptive일 때 max_tokens에 더한다 (생각도 max_tokens에 들어간다)
   structured_output: false            # true면 output_config.format(json_schema)로 JSON을 강제
   batch_timeout_hours: 24
 
+models:
+  # 짧은 판정 호출(V11 의미 대조, 회색 구간, 이미지 검색어, 사진 대조)에 쓰는 모델. 생각은 끄고 노력은 낮게
+  light: claude-haiku-4-5
+  light_effort: low                   # 받지 않는 모델(Haiku 4.5)에는 보내지 않는다
+  # 모델이 404(은퇴)를 돌려주면 다음 모델로 바꿔 부르고 알린다. 확인되면 retired에 적는다
+  fallbacks:
+    claude-haiku-4-5: claude-sonnet-5-5
+    claude-sonnet-5: claude-sonnet-5-5
+  retired: []
+
 verify:
   semantic_llm: false                 # V11. 출시 모드에서 켠다
-  semantic_model: claude-haiku-4-5
   copy_max_run: 7                     # 가장 긴 공통 어절 열
   copy_ngram: 5
   copy_ngram_ratio: 0.15
@@ -125,8 +138,7 @@ images:                               # 기준: docs/images.md, 출처·순서: 
   per_run: 20
   max_attempts: 2
   retry_hours: 6                      # 못 찾은 글은 이만큼 지나 한 번 더
-  brief_llm: true                     # API 키가 있으면 Haiku로 검색어·대체 텍스트를 만든다
-  brief_model: claude-haiku-4-5
+  brief_llm: true                     # API 키가 있으면 models.light로 검색어·대체 텍스트를 만든다
   auto_approve: false                 # 베타: 자동으로 찾은 사진은 관리 화면에서 승인해야 실린다
   vision_check: false                 # 출시: 사진이 기사 대상과 맞는지 Claude가 한 번 본다
   candidates_per_source: 5

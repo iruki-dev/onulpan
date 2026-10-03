@@ -16,7 +16,8 @@ import httpx
 import psycopg
 
 from ..db import jsonb, log_decision
-from ..generate.gateway import LLMClient, record_call
+from ..generate.gateway import LLMClient
+from ..generate.models import light_call
 from ..generate.prompts import parse_json_output
 from ..settings import Settings
 from ..timeutil import kst
@@ -112,18 +113,14 @@ def vision_ok(conn: psycopg.Connection, llm: LLMClient, s: Settings, c: policy.C
     """출시 모드: 사진이 기사 대상과 맞는지 Claude가 한 번 본다. 판정 실패는 통과로 보지 않는다."""
     if not c.file_url:
         return False
-    params = {"model": s["images"]["brief_model"], "max_tokens": 120,
-              "system": "너는 신문 사진부 담당자다. 사진이 기사에 실을 대표 이미지로 맞는지 판정한다. "
-                        "다른 인물·다른 장소이거나 기사와 관계없으면 match는 false. 출력은 JSON 하나뿐이다: "
-                        '{"match": true, "reason": "한 문장"}',
-              "messages": [{"role": "user", "content": [
-                  {"type": "image", "source": {"type": "url", "url": c.file_url}},
-                  {"type": "text", "text": f"기사 제목: {post['title']}\n찾던 대상: {brief.query_ko} ({brief.subject})"}]}]}
-    try:
-        res = llm.create(params)
-    except RuntimeError:
+    system = ("너는 신문 사진부 담당자다. 사진이 기사에 실을 대표 이미지로 맞는지 판정한다. "
+              "다른 인물·다른 장소이거나 기사와 관계없으면 match는 false. 출력은 JSON 하나뿐이다: "
+              '{"match": true, "reason": "한 문장"}')
+    content = [{"type": "image", "source": {"type": "url", "url": c.file_url}},
+               {"type": "text", "text": f"기사 제목: {post['title']}\n찾던 대상: {brief.query_ko} ({brief.subject})"}]
+    res = light_call(conn, llm, s, "image_vision", system, content, 200)
+    if res is None or not res.ok:
         return False
-    record_call(conn, "image_vision", res)
     try:
         return bool(parse_json_output(res.text).get("match"))
     except (ValueError, json.JSONDecodeError):
