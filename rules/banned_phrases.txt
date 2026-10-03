@@ -1,0 +1,45 @@
+# V8 금지 표현. 한 줄에 정규식 하나. ‘# ’로 시작하면 주석.
+# 거슬리는 표현을 발견하면 한 줄 추가하고 커밋한다. 변경 이력이 곧 편집 원칙의 운영 기록이다.
+# 형식: <분류>\t<정규식>
+
+# ── 주어 없는 표현 (말한 주체를 붙여야 한다) ──
+subjectless	논란이\s*(일고|일어|커지|확산|불거)
+subjectless	비판이\s*(나온다|나오고|나왔다|제기|잇따)
+subjectless	우려가\s*(제기|나온다|나오고|커지|확산)
+subjectless	(라|이)는\s*지적이다
+subjectless	(라|이)는\s*지적이\s*나온다
+subjectless	(라|이)는\s*평가다
+subjectless	(라|이)는\s*분석이다
+subjectless	(라|이)는\s*관측이\s*나온다
+subjectless	(라|이)는\s*목소리가\s*(높|커)
+subjectless	(라|이)는\s*전망이\s*(나온다|우세)
+subjectless	여론이\s*들끓
+subjectless	뒷말이\s*무성
+subjectless	파장이\s*예상
+
+# ── 평가 형용사·감정어 (판단은 독자의 몫) ──
+evaluative	충격적
+evaluative	경악
+evaluative	황당
+evaluative	굴욕
+evaluative	참담
+evaluative	어처구니
+evaluative	망신
+evaluative	꼼수
+evaluative	막말
+evaluative	폭탄\s*발언
+evaluative	초유의
+evaluative	역대급
+evaluative	대참사
+evaluative	발칵
+evaluative	맹비난
+evaluative	일침
+evaluative	사이다\s*(발언|행보|답변|일침)
+evaluative	민낯
+evaluative	속내
+
+# ── 전망·의견 (사실만 쓴다) ──
+opinion	것으로\s*보인다
+opinion	귀추가\s*주목
+opinion	주목된다
+opinion	(해야|돼야|되어야)\s*(할|한다)

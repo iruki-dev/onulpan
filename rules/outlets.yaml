@@ -1,0 +1,42 @@
+# 수집 대상 매체. 성향으로 분류하지 않는다. 매체군(형태)만 둔다.
+# grp: national_daily | broadcast | wire | economic | regional | online | public
+# verified: 피드 주소가 실제로 항목을 돌려주는 것을 확인한 날짜. active: false는 주소 확인 전이라 수집하지 않는다.
+# 바뀌면 이 파일을 고치고 `python -m worker.jobs.cli sync-outlets`. 편집 원칙 페이지의 공개 목록도 여기서 나온다.
+
+outlets:
+  # ── 뉴스통신사 ──
+  - { name: 연합뉴스,   domain: yna.co.kr,        feed_url: "https://www.yna.co.kr/rss/news.xml",                 grp: wire,           verified: 2026-10-03 }
+  - { name: 뉴시스,     domain: newsis.com,       feed_url: "https://www.newsis.com/RSS/sokbo.xml",               grp: wire,           verified: 2026-10-03 }
+  - { name: 뉴스1,      domain: news1.kr,         feed_url: null,                                                 grp: wire,           active: false, note: "공개 RSS 주소 확인 필요" }
+
+  # ── 전국 종합일간지 ──
+  - { name: 조선일보,   domain: chosun.com,       feed_url: "https://www.chosun.com/arc/outboundfeeds/rss/?outputType=xml", grp: national_daily, verified: 2026-10-03 }
+  - { name: 경향신문,   domain: khan.co.kr,       feed_url: "https://www.khan.co.kr/rss/rssdata/total_news.xml",  grp: national_daily, verified: 2026-10-03 }
+  - { name: 한겨레,     domain: hani.co.kr,       feed_url: "https://www.hani.co.kr/rss",                         grp: national_daily, verified: 2026-10-03 }
+  - { name: 국민일보,   domain: kmib.co.kr,       feed_url: "https://www.kmib.co.kr/rss/data/kmibRssAll.xml",     grp: national_daily, verified: 2026-10-03 }
+  - { name: 세계일보,   domain: segye.com,        feed_url: "https://www.segye.com/Articles/RSSList/segye_recent.xml", grp: national_daily, verified: 2026-10-03 }
+  - { name: 동아일보,   domain: donga.com,        feed_url: "https://rss.donga.com/total.xml",                    grp: national_daily, active: false, note: "2026-10-03 수집 서버에서 403. 재확인 필요" }
+  - { name: 중앙일보,   domain: joongang.co.kr,   feed_url: null,                                                 grp: national_daily, active: false, note: "공개 RSS 주소 확인 필요" }
+  - { name: 한국일보,   domain: hankookilbo.com,  feed_url: null,                                                 grp: national_daily, active: false, note: "공개 RSS 주소 확인 필요" }
+  - { name: 서울신문,   domain: seoul.co.kr,      feed_url: null,                                                 grp: national_daily, active: false, note: "공개 RSS 주소 확인 필요" }
+  - { name: 문화일보,   domain: munhwa.com,       feed_url: null,                                                 grp: national_daily, active: false, note: "공개 RSS 주소 확인 필요" }
+
+  # ── 방송 (지상파·종편·보도 전문) ──
+  - { name: MBC,        domain: imnews.imbc.com,  feed_url: "https://imnews.imbc.com/rss/google_news/narrativeNews.rss", grp: broadcast, verified: 2026-10-03 }
+  - { name: SBS,        domain: news.sbs.co.kr,   feed_url: "https://news.sbs.co.kr/news/SectionRssFeed.do?sectionId=01&plink=RSSREADER", grp: broadcast, verified: 2026-10-03 }
+  - { name: JTBC,       domain: news.jtbc.co.kr,  feed_url: "https://fs.jtbc.co.kr/RSS/newsflash.xml",            grp: broadcast,      verified: 2026-10-03 }
+  - { name: TV조선,     domain: news.tvchosun.com, feed_url: "https://news.tvchosun.com/site/data/rss/rss.xml",   grp: broadcast,      verified: 2026-10-03 }
+  - { name: MBN,        domain: mbn.co.kr,        feed_url: "https://www.mbn.co.kr/rss/",                          grp: broadcast,      verified: 2026-10-03 }
+  - { name: KBS,        domain: news.kbs.co.kr,   feed_url: null,                                                 grp: broadcast,      active: false, note: "공개 RSS 주소 확인 필요" }
+  - { name: YTN,        domain: ytn.co.kr,        feed_url: null,                                                 grp: broadcast,      active: false, note: "공개 RSS 주소 확인 필요" }
+  - { name: 채널A,      domain: ichannela.com,    feed_url: null,                                                 grp: broadcast,      active: false, note: "공개 RSS 주소 확인 필요" }
+
+  # ── 경제지 ──
+  - { name: 매일경제,   domain: mk.co.kr,         feed_url: "https://www.mk.co.kr/rss/30000001/",                  grp: economic,       verified: 2026-10-03 }
+  - { name: 한국경제,   domain: hankyung.com,     feed_url: "https://www.hankyung.com/feed/all-news",              grp: economic,       verified: 2026-10-03 }
+  - { name: 머니투데이, domain: mt.co.kr,         feed_url: "https://rss.mt.co.kr/mt_news.xml",                    grp: economic,       verified: 2026-10-03 }
+  - { name: 서울경제,   domain: sedaily.com,      feed_url: "https://www.sedaily.com/rss/newsall",                 grp: economic,       verified: 2026-10-03 }
+  - { name: 이데일리,   domain: edaily.co.kr,     feed_url: null,                                                 grp: economic,       active: false, note: "공개 RSS 주소 확인 필요" }
+
+  # ── 정부 ── 정책브리핑 RSS는 제공 중단. 공공데이터포털 정책뉴스 API(공공누리 제1유형, 출처 표시)
+  - { name: 정책브리핑, domain: korea.kr,         feed_url: "https://apis.data.go.kr/1371000/policyNewsService/policyNewsList", feed_type: api, grp: public, note: "환경 변수 DATA_GO_KR_SERVICE_KEY 필요" }

@@ -1,0 +1,26 @@
+# 교양 편집 캘린더. 트리거가 아니라 캘린더로 쓴다. 매주 일요일 22:00에 다음 7일치를 한 번에 배치 생성한다.
+# 저작권 만료 작품·역사·과학만. 현대 작품 인용 금지.
+# date가 있으면 그날, 없으면 weekday(mon..sun) 순환 목록에서 차례로 채운다.
+
+dated:
+  - { date: 2026-10-09, title: "한글날: 훈민정음 해례본이 설명한 글자 만드는 원리", area: history }
+  - { date: 2026-10-24, title: "국제연합은 어떻게 만들어졌나", area: history }
+  - { date: 2026-11-11, title: "제1차 세계대전 휴전 협정의 날", area: history }
+  - { date: 2026-12-10, title: "세계인권선언이 나오기까지", area: history }
+  - { date: 2026-12-22, title: "동지: 낮이 가장 짧은 날의 천문학", area: science }
+
+rotation:
+  - { title: "조선의 측우기는 비를 어떻게 쟀나", area: science }
+  - { title: "정약용의 『목민심서』가 말한 공직자의 자세", area: classics }
+  - { title: "멘델의 완두콩 실험", area: science }
+  - { title: "김만중의 『구운몽』 줄거리와 읽는 법", area: classics }
+  - { title: "갈릴레이가 목성의 위성을 발견한 밤", area: science }
+  - { title: "『징비록』: 류성룡이 남긴 전쟁의 기록", area: classics }
+  - { title: "혈액형은 어떻게 발견되었나", area: science }
+  - { title: "박지원의 『열하일기』 속 청나라 풍경", area: classics }
+  - { title: "주기율표를 만든 멘델레예프의 예측", area: science }
+  - { title: "『삼국유사』의 단군 이야기는 어떻게 전해졌나", area: classics }
+  - { title: "파스퇴르와 백조목 플라스크 실험", area: science }
+  - { title: "허균의 『홍길동전』이 쓰인 시대", area: classics }
+  - { title: "세종 대의 천문 관측기구 혼천의", area: science }
+  - { title: "셰익스피어의 『햄릿』은 어떤 이야기인가", area: classics }

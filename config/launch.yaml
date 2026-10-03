@@ -1,0 +1,20 @@
+# 출시 모드: 하루 150편, 월 약 61만 원. beta.yaml을 바탕으로 아래 값만 덮어쓴다.
+mode: launch
+
+cluster:
+  gray_llm: true                      # 회색 구간만 Haiku
+
+select:
+  daily_cap: 150
+
+verify:
+  semantic_llm: true                  # V11 의미 대조 (Haiku 4.5)
+
+review:
+  enabled: false                      # 4주 연속 반려율 1% 미만 확인 후 사람 검토 해제
+
+triggers:
+  explainer_daily_cap: 10
+
+budget:
+  monthly_usd: 400

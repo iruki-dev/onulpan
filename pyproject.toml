@@ -1,0 +1,31 @@
+[project]
+name = "onulpan-worker"
+version = "0.1.0"
+description = "오늘판 워커: 수집 → 정규화 → 묶기 → 생성 → 검증 → 게시 → 조간 조립 → 발송"
+requires-python = ">=3.11"
+dependencies = [
+  "psycopg[binary]>=3.2",
+  "httpx>=0.27",
+  "feedparser>=6.0",
+  "trafilatura>=1.12",
+  "kiwipiepy>=0.20",
+  "anthropic>=1.0",
+  "numpy>=1.26",
+  "pyyaml>=6.0",
+]
+
+[project.optional-dependencies]
+# 운영 서버에서만 설치한다 (CPU 추론, 약 2GB). 테스트와 개발은 해시 임베더로 대신한다.
+embed = ["sentence-transformers>=3.0"]
+dev = ["pytest>=8.0"]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["worker*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
