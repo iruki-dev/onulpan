@@ -1,0 +1,16 @@
+[Unit]
+Description=오늘판 웹 (Next.js standalone)
+After=postgresql.service
+PartOf=onulpan.target
+
+[Service]
+User=onulpan
+WorkingDirectory=/opt/onulpan/web/.next/standalone
+EnvironmentFile=/etc/onulpan.env
+Environment=NODE_ENV=production PORT=3000 HOSTNAME=127.0.0.1
+ExecStart=/usr/bin/node server.js
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=onulpan.target

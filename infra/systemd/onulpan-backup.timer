@@ -1,0 +1,10 @@
+[Unit]
+Description=오늘판: DB 백업
+
+[Timer]
+OnCalendar=*-*-* 03:10:00 Asia/Seoul
+Persistent=true
+Unit=onulpan-backup.service
+
+[Install]
+WantedBy=timers.target

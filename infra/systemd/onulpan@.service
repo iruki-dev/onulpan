@@ -1,0 +1,11 @@
+[Unit]
+Description=오늘판 작업 %i
+After=postgresql.service
+
+[Service]
+Type=oneshot
+User=onulpan
+WorkingDirectory=/opt/onulpan
+EnvironmentFile=/etc/onulpan.env
+ExecStart=/opt/onulpan/.venv/bin/python -m worker.jobs.cli %i
+TimeoutStartSec=50min

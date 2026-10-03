@@ -1,0 +1,7 @@
+[Unit]
+Description=오늘판 (웹, 작업 큐, 타이머)
+Wants=onulpan-web.service onulpan-jobs.service
+After=postgresql.service
+
+[Install]
+WantedBy=multi-user.target

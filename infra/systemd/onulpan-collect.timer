@@ -1,0 +1,10 @@
+[Unit]
+Description=오늘판: 1~3단계 수집·중복 제거·묶기 (15분마다)
+
+[Timer]
+OnCalendar=*-*-* *:00/15:00 Asia/Seoul
+Persistent=true
+Unit=onulpan@collect.service
+
+[Install]
+WantedBy=timers.target

@@ -1,0 +1,15 @@
+[Unit]
+Description=오늘판 작업 큐 (설정 변경 재조립, 초안 승인·반려, 정정, 로그인 메일)
+After=postgresql.service
+PartOf=onulpan.target
+
+[Service]
+User=onulpan
+WorkingDirectory=/opt/onulpan
+EnvironmentFile=/etc/onulpan.env
+ExecStart=/opt/onulpan/.venv/bin/python -m worker.jobs.cli run-jobs
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=onulpan.target

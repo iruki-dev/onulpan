@@ -1,0 +1,10 @@
+[Unit]
+Description=오늘판: 베타: 검토 안 된 초안 자동 게시
+
+[Timer]
+OnCalendar=*-*-* 06:20:00 Asia/Seoul
+Persistent=true
+Unit=onulpan@auto-publish.service
+
+[Install]
+WantedBy=timers.target

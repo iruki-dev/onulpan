@@ -7,6 +7,7 @@
     python -m worker.jobs.cli scheduler         # systemd 없이 돌릴 때: 내부 시계로 위 작업을 KST 일정대로
     python -m worker.jobs.cli sync-outlets
     python -m worker.jobs.cli seed-demo         # 개발용: 가상 기사·글로 웹을 띄워 볼 수 있게
+    python -m worker.jobs.cli alert backup_failed "메시지"
 """
 from __future__ import annotations
 
@@ -100,7 +101,7 @@ def main(argv: list[str] | None = None) -> int:
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
     ap = argparse.ArgumentParser(prog="worker")
     ap.add_argument("command")
-    ap.add_argument("--json", action="store_true")
+    ap.add_argument("rest", nargs="*")
     args = ap.parse_args(argv)
     cmd = args.command
     s = settings()
@@ -133,6 +134,15 @@ def main(argv: list[str] | None = None) -> int:
 
         with connect() as conn:
             print(reports.twelve_week(conn, utcnow()))
+        return 0
+    if cmd == "alert":
+        # infra/backup.sh 등 셸 스크립트에서: python -m worker.jobs.cli alert backup_failed "메시지"
+        from ..ops import alerts
+
+        kind = args.rest[0]
+        text = " ".join(args.rest[1:]) or kind
+        with connect() as conn:
+            alerts.alert(conn, kind, kst(utcnow()).strftime("%Y-%m-%dT%H"), text)
         return 0
     if cmd == "seed-demo":
         from ..dev.demo import seed

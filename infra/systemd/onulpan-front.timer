@@ -1,0 +1,10 @@
+[Unit]
+Description=오늘판: 1면 선정
+
+[Timer]
+OnCalendar=*-*-* 06:25:00 Asia/Seoul
+Persistent=true
+Unit=onulpan@front.service
+
+[Install]
+WantedBy=timers.target

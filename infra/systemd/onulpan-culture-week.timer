@@ -1,0 +1,10 @@
+[Unit]
+Description=오늘판: 교양 7편 배치 생성, 주간 품질 리포트
+
+[Timer]
+OnCalendar=Sun *-*-* 22:00:00 Asia/Seoul
+Persistent=true
+Unit=onulpan@culture-week.service
+
+[Install]
+WantedBy=timers.target

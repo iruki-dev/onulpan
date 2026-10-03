@@ -1,0 +1,10 @@
+[Unit]
+Description=오늘판: 배치 회수 → 검증 → 초안/게시 (매시 30분)
+
+[Timer]
+OnCalendar=*-*-* *:30:00 Asia/Seoul
+Persistent=true
+Unit=onulpan@collect-batches.service
+
+[Install]
+WantedBy=timers.target

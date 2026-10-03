@@ -1,0 +1,10 @@
+[Unit]
+Description=오늘판: 이메일 수신자 조간 사전 조립
+
+[Timer]
+OnCalendar=*-*-* 06:30:00 Asia/Seoul
+Persistent=true
+Unit=onulpan@assemble.service
+
+[Install]
+WantedBy=timers.target
