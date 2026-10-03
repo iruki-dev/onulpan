@@ -17,3 +17,26 @@ export const NOTICE_KO: Record<string, string> = {
 export const REJECT_REASONS: Record<string, string> = {
   fact_error: "사실 오류", interpretation_error: "해석 오류", expression: "표현", duplicate: "중복",
 };
+
+/** 이미지 라이선스 표기. rules/image_sources.yaml의 licenses와 같은 값이어야 한다 (tests/test_images.py가 대조). */
+export const LICENSES: Record<string, { label: string; url?: string; link?: boolean }> = {
+  "KOGL-0": { label: "공공누리 제0유형", url: "https://www.kogl.or.kr/info/license.do" },
+  "KOGL-1": { label: "공공누리 제1유형", url: "https://www.kogl.or.kr/info/licenseType1.do" },
+  CC0: { label: "CC0", url: "https://creativecommons.org/publicdomain/zero/1.0/deed.ko" },
+  PD: { label: "퍼블릭 도메인" },
+  "PD-USGov": { label: "미국 연방정부 저작물" },
+  "CC-BY-2.0": { label: "CC BY 2.0", url: "https://creativecommons.org/licenses/by/2.0/deed.ko" },
+  "CC-BY-3.0": { label: "CC BY 3.0", url: "https://creativecommons.org/licenses/by/3.0/deed.ko" },
+  "CC-BY-4.0": { label: "CC BY 4.0", url: "https://creativecommons.org/licenses/by/4.0/deed.ko" },
+  "CC-BY-SA-2.0": { label: "CC BY-SA 2.0", url: "https://creativecommons.org/licenses/by-sa/2.0/deed.ko", link: true },
+  "CC-BY-SA-3.0": { label: "CC BY-SA 3.0", url: "https://creativecommons.org/licenses/by-sa/3.0/deed.ko", link: true },
+  "CC-BY-SA-3.0-IGO": { label: "CC BY-SA 3.0 IGO", url: "https://creativecommons.org/licenses/by-sa/3.0/igo/", link: true },
+  "CC-BY-SA-4.0": { label: "CC BY-SA 4.0", url: "https://creativecommons.org/licenses/by-sa/4.0/deed.ko", link: true },
+  Unsplash: { label: "Unsplash 라이선스", url: "https://unsplash.com/license" },
+  Pexels: { label: "Pexels 라이선스", url: "https://www.pexels.com/license/" },
+  Pixabay: { label: "Pixabay 라이선스", url: "https://pixabay.com/service/license-summary/" },
+  press: { label: "보도용 제공" },
+  own: { label: "자체 제작" },
+};
+export const TIER_KO: Record<string, string> = { free: "자유 이용 출처", press: "보도용 제공 출처", own: "자체 제작 그래픽" };
+export const RELATION_KO: Record<string, string> = { owner: "저작권자", agent: "대리인", portrait: "사진 속 인물", other: "기타" };

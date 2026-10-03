@@ -1,7 +1,9 @@
 import Link from "next/link";
+import type { Img } from "@/lib/images";
 import { SECTION_KO } from "@/lib/labels";
 import { type Conflict, type Link as PostLink, type Post, minutesOf } from "@/lib/posts";
 import { Paragraphs, paragraphCount } from "./Body";
+import { Figure } from "./Figure";
 import { Book, Chevron, Drop } from "./Icons";
 import type { IssueSections } from "./IssueView";
 import { ReadMark, StoryBody } from "./Reading";
@@ -22,15 +24,18 @@ export function ConflictCell({ conflicts }: { conflicts: Conflict[] }) {
 }
 
 /** 조간 속 기사: 번호·분야, 제목, 첫 문단, (펼치면) 나머지 */
-export function Story({ post, num, lead, links, conflicts, corrected, niche, inSection }: {
+export function Story({ post, num, lead, links, conflicts, corrected, niche, inSection, image }: {
   post: Post; num?: number; lead?: boolean; links?: PostLink[]; conflicts?: Conflict[]; corrected?: boolean; niche?: boolean;
   /** 분야 머리 아래에서는 분야 이름을 되풀이하지 않는다 */
   inSection?: boolean;
+  /** 1면 머리기사의 대표 이미지 (크레딧은 이미지 바로 아래) */
+  image?: Img;
 }) {
   const minutes = minutesOf(post.char_count);
   const more = paragraphCount(post.body_md) > 1;
   return (
-    <article className="story" id={`p${post.seq}`} data-story={post.seq}>
+    <article className={`story${image ? " lead-story" : ""}`} id={`p${post.seq}`} data-story={post.seq}>
+      {image && <Figure img={image} lead priority />}
       <div className="kicker">
         {num !== undefined && <span className="num">{String(num).padStart(2, "0")}</span>}
         {post.section !== "none" && !inSection && <span className="sec">{SECTION_KO[post.section]}</span>}

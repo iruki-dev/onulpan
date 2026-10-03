@@ -117,3 +117,20 @@ schedule:
 email:
   from: "오늘판 <paper@onulpan.kr>"
   retry_minutes: 10
+
+images:                               # 기준: docs/images.md, 출처·순서: rules/image_sources.yaml
+  enabled: true
+  kinds: [fact, synthesis, issue, explainer, culture]
+  lookback_hours: 48                  # 이 시간 안에 쓴 글에만 찾는다
+  per_run: 20
+  max_attempts: 2
+  retry_hours: 6                      # 못 찾은 글은 이만큼 지나 한 번 더
+  brief_llm: true                     # API 키가 있으면 Haiku로 검색어·대체 텍스트를 만든다
+  brief_model: claude-haiku-4-5
+  auto_approve: false                 # 베타: 자동으로 찾은 사진은 관리 화면에서 승인해야 실린다
+  vision_check: false                 # 출시: 사진이 기사 대상과 맞는지 Claude가 한 번 본다
+  candidates_per_source: 5
+  min_width: 800
+  render_width: 1600                  # 표시용 축소본 가로 (비율 유지, 자르지 않음)
+  max_bytes: 15000000
+  request_reply_days: 3               # 권리자 요청 회신 기한

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { q } from "@/lib/db";
+import { imageSources } from "@/lib/images";
 import { GROUP_KO } from "@/lib/labels";
 
 export const metadata = {
@@ -7,7 +8,10 @@ export const metadata = {
   description: "오늘판의 인공지능이 무엇을 쓰고 무엇을 쓰지 않는지, 어떤 기준으로 지면을 고르는지 공개하는 약속입니다.",
 };
 
-const REVISIONS = [{ version: "v1", date: process.env.BETA_LAUNCH_DATE ?? "베타 공개일", change: "최초 공개" }];
+const REVISIONS = [
+  { version: "v1", date: process.env.BETA_LAUNCH_DATE ?? "베타 공개일", change: "최초 공개" },
+  { version: "v1.1", date: "2026-10-03", change: "이미지 원칙 추가" },
+];
 
 export default async function PrinciplesPage() {
   const outlets = await q<{ name: string; grp: string; active: boolean; excluded_at: Date | null }>(
@@ -16,6 +20,7 @@ export default async function PrinciplesPage() {
   const stats = await q<{ month: string; posts: number; corrections: number; correction_pct: number }>(
     "SELECT * FROM v_correction_monthly ORDER BY month DESC LIMIT 12",
   );
+  const imgSources = await imageSources();
   const byGroup = new Map<string, typeof outlets>();
   for (const o of outlets.filter((o) => o.active && !o.excluded_at)) byGroup.set(o.grp, [...(byGroup.get(o.grp) ?? []), o]);
   const founder = process.env.FOUNDER_NAME ?? "창업자";
@@ -87,6 +92,39 @@ export default async function PrinciplesPage() {
         <li>쟁점 정리 1편은 모든 독자에게 같습니다. 오늘 입장이 갈린 사안 가운데 점수가 가장 높은 것입니다.</li>
       </ul>
       <p><strong>우리가 쓰지 않는 기준.</strong> 클릭 수, 체류 시간, 공유 수는 1면과 지면을 고르는 데 쓰지 않습니다. 많이 읽히는 글이 아니라 많이 보도된 글이 앞에 옵니다.</p>
+
+      <h2 className="section-head" id="images">이미지는 이렇게 고르고 표기합니다</h2>
+      <p><strong>이미지는 이용 조건이 확인된 출처에서만 가져오고, 출처가 지정한 크레딧을 이미지 바로 아래에 그대로 적습니다.</strong>{" "}
+        언론사가 찍은 보도사진은 가져오지 않습니다. 같은 사이트 안에서도 이미지마다 조건이 다를 수 있어, 이미지 한 장 한 장의 표기를 기준으로 판단합니다.</p>
+      <ul>
+        <li><strong>자유 이용 출처를 먼저 찾습니다.</strong> 기업·기관 발표를 다루는 글에는 그 기업·기관이 보도용으로 제공한 이미지를, 그 소식을 다루는 글에서만 씁니다.</li>
+        <li><strong>원본 형태를 유지합니다.</strong> 자르거나 글자를 얹는 것은 변경을 허락한 라이선스에서만 합니다. 나머지는 원본 비율 그대로 싣습니다.</li>
+        <li><strong>자체 제작 그래픽</strong>에는 원자료의 출처를 함께 적습니다.</li>
+        <li><strong>사람이 확인합니다.</strong> 자동으로 찾은 사진은 사람이 확인한 뒤에 싣습니다. 인물 사진은 항상 그렇습니다.</li>
+        <li>이미지 아래 ⓘ를 누르면 출처, 라이선스, 이용 조건, 원본을 볼 수 있습니다.</li>
+      </ul>
+      {(["free", "press"] as const).map((tier) => (
+        <div key={tier}>
+          <h3>{tier === "free" ? "자유 이용 출처 — 출처 표시만 하면 모든 글에" : "보도용 제공 출처 — 그 소식을 다루는 글에서만, 원본 그대로"}</h3>
+          <div className="table-wrap">
+            <table>
+              <thead><tr><th>출처</th><th>주요 이미지</th><th>사용 조건</th></tr></thead>
+              <tbody>
+                {imgSources.filter((s) => s.tier === tier).map((s) => (
+                  <tr key={s.key}>
+                    <td>{s.url ? <a href={s.url} target="_blank" rel="noopener">{s.name}</a> : s.name}</td>
+                    <td>{s.examples}</td><td>{s.conditions}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      ))}
+      <h3 id="image-requests">권리자 요청</h3>
+      <p>이미지의 권리자이시거나 사진 속 인물이시라면 이미지 아래 ⓘ → ‘이미지 내리기 요청’으로 알려 주세요({contact}로도 받습니다).{" "}
+        <strong>요청을 받으면 그 자리에서 이미지를 내리고</strong>, 출처와 이용 조건을 확인해 3일 안에 답을 드립니다.{" "}
+        이용 근거를 확인하면 근거를 보여 드리고 협의하며, 그렇지 않으면 다른 이미지로 바꾸거나 내린 상태로 둡니다.</p>
 
       <h2 className="section-head">글은 고치지 않고 덧붙입니다</h2>
       <p><strong>한 번 발행한 글은 수정하거나 지우지 않습니다. 틀린 것이 확인되면 정정 글을 새로 쓰고, 원래 글 위에 그 사실을 표시합니다.</strong>

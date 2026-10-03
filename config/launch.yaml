@@ -18,3 +18,7 @@ triggers:
 
 budget:
   monthly_usd: 400
+
+images:
+  auto_approve: true                  # 인물 사진은 여전히 승인 대기
+  vision_check: true

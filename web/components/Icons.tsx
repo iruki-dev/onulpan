@@ -38,3 +38,10 @@ export const Kakao = ({ size = 20 }: P) => (
     <path fill="currentColor" d="M12 4C7 4 3 7.2 3 11.1c0 2.5 1.6 4.7 4.1 5.9l-1 3.6c-.1.3.3.6.6.4l4.2-2.8c.4 0 .7.1 1.1.1 5 0 9-3.2 9-7.2S17 4 12 4z" />
   </svg>
 );
+export const Info = ({ size = 18 }: P) => (
+  <svg {...base(size)} strokeWidth={1.8}><circle cx="12" cy="12" r="9" /><path d="M12 11v5M12 7.6v.4" /></svg>
+);
+export const Close = ({ size = 20 }: P) => <svg {...base(size)} strokeWidth={2}><path d="M6 6l12 12M18 6L6 18" /></svg>;
+export const ImageIcon = ({ size = 18 }: P) => (
+  <svg {...base(size)} strokeWidth={1.8}><rect x="3" y="4" width="18" height="16" rx="3" /><circle cx="9" cy="10" r="1.8" /><path d="M21 16l-5-5-9 9" /></svg>
+);

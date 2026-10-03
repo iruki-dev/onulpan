@@ -1,0 +1,11 @@
+[Unit]
+Description=오늘판: 최근 글의 대표 이미지 찾기 (15분마다, 06:22에 1면 선정 전 한 번 더)
+
+[Timer]
+OnCalendar=*-*-* *:05/15:00 Asia/Seoul
+OnCalendar=*-*-* 06:22:00 Asia/Seoul
+Persistent=true
+Unit=onulpan@images.service
+
+[Install]
+WantedBy=timers.target

@@ -18,7 +18,7 @@ fi
 id onulpan >/dev/null 2>&1 || useradd --system --home "$APP" --shell /usr/sbin/nologin onulpan
 mkdir -p "$APP"
 rsync -a --delete --exclude node_modules --exclude .next --exclude var "$SRC"/ "$APP"/
-mkdir -p "$APP/var" "$APP/reports"
+mkdir -p "$APP/var" "$APP/var/images" "$APP/reports"
 
 # 파이썬 워커 (bge-m3 CPU 추론 포함)
 python3 -m venv "$APP/.venv"
@@ -55,6 +55,9 @@ echo "  onulpan_web:    $WEB_PW"
 
 # 수집 대상 매체
 sudo -u onulpan env $(grep -v '^#' /etc/onulpan.env 2>/dev/null | xargs) "$APP/.venv/bin/python" -m worker.jobs.cli sync-outlets || true
+
+# 이미지 출처 등록부 (rules/image_sources.yaml)
+sudo -u onulpan env $(grep -v '^#' /etc/onulpan.env 2>/dev/null | xargs) "$APP/.venv/bin/python" -m worker.jobs.cli sync-image-sources || true
 
 # systemd
 cp "$APP"/infra/systemd/*.service "$APP"/infra/systemd/*.timer "$APP"/infra/systemd/*.target /etc/systemd/system/

@@ -1,16 +1,18 @@
 import Link from "next/link";
 import { KIND_KO, SECTION_KO } from "@/lib/labels";
+import type { Img } from "@/lib/images";
 import type { Conflict, Later, Link as PostLink, Post } from "@/lib/posts";
 import { kstDateTime } from "@/lib/time";
 import { Paragraphs } from "./Body";
+import { Figure } from "./Figure";
 import { Chevron } from "./Icons";
 import { IssueView, type IssueSections } from "./IssueView";
 import { ConflictCell } from "./Story";
 
 /** 글 머리(분야, 정정·후속 링크, 제목, 작성자 줄)와 본문 */
-export function ArticleView({ post, links, conflicts, later, outletOf }: {
+export function ArticleView({ post, links, conflicts, later, outletOf, image }: {
   post: Post; links?: PostLink[]; conflicts?: Conflict[];
-  later?: { corrections: Later[]; newer: Later[] }; outletOf?: Map<string, string>;
+  later?: { corrections: Later[]; newer: Later[] }; outletOf?: Map<string, string>; image?: Img;
 }) {
   const sec = post.kind === "issue" ? (post.meta.sections as IssueSections | undefined) : undefined;
   const kicker = post.kind === "fact" ? SECTION_KO[post.section]
@@ -38,6 +40,7 @@ export function ArticleView({ post, links, conflicts, later, outletOf }: {
           <span className="when">{kstDateTime(post.created_at)}</span>
         </span>
       </div>
+      {image && <div className="article-figure"><Figure img={image} lead priority /></div>}
       {sec ? (
         <IssueView sections={sec} outletOf={outletOf} />
       ) : (

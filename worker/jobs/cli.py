@@ -6,6 +6,8 @@
     python -m worker.jobs.cli run-jobs          # 작업 큐 상주 프로세스
     python -m worker.jobs.cli scheduler         # systemd 없이 돌릴 때: 내부 시계로 위 작업을 KST 일정대로
     python -m worker.jobs.cli sync-outlets
+    python -m worker.jobs.cli sync-image-sources # rules/image_sources.yaml → image_sources
+    python -m worker.jobs.cli images            # 최근 글의 대표 이미지 찾기
     python -m worker.jobs.cli seed-demo         # 개발용: 가상 기사·글로 웹을 띄워 볼 수 있게
     python -m worker.jobs.cli alert backup_failed "메시지"
 """
@@ -33,6 +35,7 @@ TASKS = {
     "send": tasks.send_emails,
     "maintenance": tasks.maintenance_daily,
     "culture-week": tasks.culture_week,
+    "images": tasks.find_images,
 }
 
 
@@ -71,6 +74,8 @@ def _due(now_kst) -> list[str]:
         out.append("issue")
     if (h, m) == (6, 20):
         out.append("auto-publish")
+    if m in (5, 20, 35, 50) or (h, m) == (6, 22):
+        out.append("images")
     if (h, m) == (6, 25):
         out.append("front")
     if (h, m) == (6, 30):
@@ -106,8 +111,19 @@ def main(argv: list[str] | None = None) -> int:
     cmd = args.command
     s = settings()
     if cmd == "migrate":
+        from ..images.policy import sync_sources
+
         with connect() as conn:
             print("applied:", migrate(conn))
+            print("image sources:", sync_sources(conn))
+            conn.commit()
+        return 0
+    if cmd == "sync-image-sources":
+        from ..images.policy import sync_sources
+
+        with connect() as conn:
+            print("image sources:", sync_sources(conn))
+            conn.commit()
         return 0
     if cmd == "sync-outlets":
         from ..collect.feeds import sync_outlets

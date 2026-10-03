@@ -6,6 +6,7 @@ import { Chevron } from "@/components/Icons";
 import { Tracker } from "@/components/Tracker";
 import { q } from "@/lib/db";
 import { KIND_KO } from "@/lib/labels";
+import { leadImages } from "@/lib/images";
 import { getOutgoingLinks, getPost, slugInfo } from "@/lib/posts";
 import { kstDateTime } from "@/lib/time";
 
@@ -40,6 +41,7 @@ export default async function WikiPage({ params }: Props) {
   const d = await load((await params).slug);
   if (!d) notFound();
   const links = d.post ? await getOutgoingLinks([d.post.seq]) : new Map();
+  const images = d.post ? await leadImages([d.post.seq]) : new Map();
   return (
     <div className="page">
       <Tracker page="wiki" />
@@ -47,7 +49,7 @@ export default async function WikiPage({ params }: Props) {
         <div className="date">주제</div>
         <h1 className="page-title">{d.info.display_name}</h1>
       </section>
-      {d.post && <ArticleView post={d.post} links={links.get(d.post.seq)} />}
+      {d.post && <ArticleView post={d.post} links={links.get(d.post.seq)} image={images.get(d.post.seq)} />}
       <div className="band" style={{ marginTop: 36 }} />
       <section className="section">
         <h2 className="section-title">이 주제의 글 {d.history.length}</h2>

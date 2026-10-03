@@ -1,0 +1,224 @@
+# 뉴스 이미지 출처 등록부. 기준: docs/images.md (뉴스 이미지 사용 가이드)
+# 이 목록에 없는 출처의 이미지는 쓰지 않는다. 바꾸면 커밋하고 `python -m worker.jobs.cli sync-image-sources`.
+# 편집 원칙 페이지의 ‘이미지 출처’ 표도 여기서 나온다.
+#
+# tier: free(자유 이용) | press(보도용 제공) | own(자체 제작)
+# licenses: 이 출처에서 받아들이는 라이선스 코드 (아래 licenses 절)
+# scope_required: 보도용. 해당 소식(slug)을 다루는 글에서만 쓴다
+# auto: 워커가 자동으로 검색한다. false인 출처는 관리 화면에서 등록한 이미지만 쓴다
+# credit: 크레딧 틀. {author} {provider} {license} {data} 자리를 채운다. 출처가 지정한 문구가 있으면 그것이 우선
+
+licenses:
+  KOGL-0:          { label: "공공누리 제0유형",  modify: true,  url: "https://www.kogl.or.kr/info/license.do" }
+  KOGL-1:          { label: "공공누리 제1유형",  modify: true,  url: "https://www.kogl.or.kr/info/licenseType1.do" }
+  CC0:             { label: "CC0",               modify: true,  url: "https://creativecommons.org/publicdomain/zero/1.0/deed.ko" }
+  PD:              { label: "퍼블릭 도메인",     modify: true }
+  PD-USGov:        { label: "미국 연방정부 저작물", modify: true }
+  CC-BY-2.0:       { label: "CC BY 2.0",         modify: true,  url: "https://creativecommons.org/licenses/by/2.0/deed.ko" }
+  CC-BY-3.0:       { label: "CC BY 3.0",         modify: true,  url: "https://creativecommons.org/licenses/by/3.0/deed.ko" }
+  CC-BY-4.0:       { label: "CC BY 4.0",         modify: true,  url: "https://creativecommons.org/licenses/by/4.0/deed.ko" }
+  # 동일조건변경허락: 변형하면 같은 라이선스로 공개해야 하므로 오늘판은 변형하지 않는다
+  CC-BY-SA-2.0:    { label: "CC BY-SA 2.0",      modify: false, url: "https://creativecommons.org/licenses/by-sa/2.0/deed.ko", link_required: true }
+  CC-BY-SA-3.0:    { label: "CC BY-SA 3.0",      modify: false, url: "https://creativecommons.org/licenses/by-sa/3.0/deed.ko", link_required: true }
+  CC-BY-SA-3.0-IGO: { label: "CC BY-SA 3.0 IGO", modify: false, url: "https://creativecommons.org/licenses/by-sa/3.0/igo/", link_required: true }
+  CC-BY-SA-4.0:    { label: "CC BY-SA 4.0",      modify: false, url: "https://creativecommons.org/licenses/by-sa/4.0/deed.ko", link_required: true }
+  Unsplash:        { label: "Unsplash 라이선스", modify: true,  url: "https://unsplash.com/license" }
+  Pexels:          { label: "Pexels 라이선스",   modify: true,  url: "https://www.pexels.com/license/" }
+  Pixabay:         { label: "Pixabay 라이선스",  modify: true,  url: "https://pixabay.com/service/license-summary/" }
+  press:           { label: "보도용 제공",       modify: false }
+  own:             { label: "자체 제작",         modify: true }
+
+sources:
+  # ── 자유 이용 출처: 출처 표시만 하면 모든 기사에 쓸 수 있다 ──
+  - key: kogl
+    name: 공공누리 0·1유형
+    tier: free
+    examples: 정부·지자체·공공기관의 행사, 정책, 인물, 장소
+    conditions: 출처 표시 (0유형은 조건 없음)
+    licenses: [KOGL-0, KOGL-1]
+    credit: "사진: {provider} 제공 ({license})"
+    url: https://www.kogl.or.kr/
+  - key: gongu
+    name: 공유마당
+    tier: free
+    examples: 만료·기증 저작물, CC 이미지
+    conditions: 저작물별 이용 조건 확인
+    licenses: [KOGL-0, KOGL-1, CC0, PD, CC-BY-2.0, CC-BY-3.0, CC-BY-4.0, CC-BY-SA-2.0, CC-BY-SA-3.0, CC-BY-SA-4.0]
+    credit: "사진: {author}/공유마당, {license}"
+    url: https://gongu.copyright.or.kr/
+  - key: nasa
+    name: NASA
+    tier: free
+    examples: 우주, 지구관측, 기관 활동
+    conditions: 기관이 직접 제작한 이미지만, 출처 표시. 기관 로고는 별도 규정
+    licenses: [PD-USGov]
+    credit: "사진: NASA"
+    auto: true
+    url: https://www.nasa.gov/nasa-brand-center/images-and-media/
+  - key: nih
+    name: NIH
+    tier: free
+    examples: 의학, 보건
+    conditions: 기관이 직접 제작한 이미지만, 출처 표시
+    licenses: [PD-USGov]
+    credit: "사진: NIH"
+    url: https://www.nih.gov/
+  - key: noaa
+    name: NOAA
+    tier: free
+    examples: 기후, 해양, 기상
+    conditions: 기관이 직접 제작한 이미지만, 출처 표시
+    licenses: [PD-USGov]
+    credit: "사진: NOAA"
+    url: https://www.noaa.gov/
+  - key: esa_hubble
+    name: ESA/허블
+    tier: free
+    examples: 천문
+    conditions: CC BY 4.0, 출처 표시
+    licenses: [CC-BY-4.0]
+    credit: "이미지: ESA/Hubble, CC BY 4.0"
+    url: https://esahubble.org/images/
+  - key: commons
+    name: Wikimedia Commons
+    tier: free
+    examples: 인물, 장소, 사물 전반
+    conditions: CC0, CC BY, CC BY-SA 파일만. 파일별 표기대로 크레딧
+    licenses: [CC0, PD, PD-USGov, CC-BY-2.0, CC-BY-3.0, CC-BY-4.0, CC-BY-SA-2.0, CC-BY-SA-3.0, CC-BY-SA-4.0]
+    credit: "사진: {author}/Wikimedia Commons, {license}"
+    auto: true
+    url: https://commons.wikimedia.org/
+  - key: oa_paper
+    name: 오픈액세스 논문
+    tier: free
+    examples: 연구 결과 그림
+    conditions: CC BY 그림만, 논문과 저자 표시
+    licenses: [CC-BY-4.0, CC-BY-3.0]
+    credit: "그림: {author}, {license}"
+  - key: unsplash
+    name: Unsplash
+    tier: free
+    examples: 개념·일반 삽화
+    conditions: 출처 표시 권장 (오늘판은 항상 표시)
+    licenses: [Unsplash]
+    credit: "사진: {author}/Unsplash"
+    auto: true
+    url: https://unsplash.com/license
+  - key: pexels
+    name: Pexels
+    tier: free
+    examples: 개념·일반 삽화
+    conditions: 출처 표시 권장 (오늘판은 항상 표시)
+    licenses: [Pexels]
+    credit: "사진: {author}/Pexels"
+    auto: true
+    url: https://www.pexels.com/license/
+  - key: pixabay
+    name: Pixabay
+    tier: free
+    examples: 개념·일반 삽화
+    conditions: 출처 표시 권장 (오늘판은 항상 표시)
+    licenses: [Pixabay]
+    credit: "이미지: {author}/Pixabay"
+    auto: true
+    url: https://pixabay.com/service/license-summary/
+  - key: own
+    name: 자체 제작 그래픽
+    tier: own
+    examples: 지도, 차트, 타임라인
+    conditions: 원자료 출처 표기
+    licenses: [own]
+    credit: "그래픽: 오늘판 · 자료: {data}"
+    auto: true
+
+  # ── 보도용 제공 출처: 해당 소식을 다루는 글에서, 원본 그대로, 지정 크레딧과 함께 ──
+  - key: newsroom
+    name: 기업 뉴스룸·프레스킷
+    tier: press
+    examples: 신제품, 시설, 경영진
+    conditions: 기업별 약관 확인, 지정 크레딧, 원본 유지
+    licenses: [press]
+    scope_required: true
+    credit: "사진: {provider}"
+  - key: eurekalert
+    name: EurekAlert!
+    tier: press
+    examples: 대학·연구기관 연구 성과
+    conditions: 이미지별 Usage Restrictions 항목 확인
+    licenses: [press, CC-BY-4.0, CC-BY-3.0]
+    scope_required: true
+    credit: "사진: {provider}"
+    url: https://www.eurekalert.org/
+  - key: esa
+    name: ESA
+    tier: press
+    examples: 우주, 지구관측
+    conditions: ©ESA 표기, CC BY-SA 3.0 IGO 이미지는 라이선스 링크 추가
+    licenses: [press, CC-BY-SA-3.0-IGO]
+    scope_required: true
+    credit: "이미지: ESA/{author}"
+    url: https://www.esa.int/ESA_Multimedia/Copyright_Notice_Images
+  - key: official
+    name: 국회·기관 공식 사진
+    tier: press
+    examples: 국회, 정부 기관 공식 행사
+    conditions: 기관이 안내한 보도 조건에 따라 사용
+    licenses: [press, KOGL-1]
+    scope_required: true
+    credit: "사진: {provider} 제공"
+  - key: prwire
+    name: 보도자료 배포 서비스
+    tier: press
+    examples: 기업·기관 발표
+    conditions: 함께 배포된 보도자료 내용을 다루는 글에서만
+    licenses: [press]
+    scope_required: true
+    credit: "사진: {provider} 제공"
+  - key: gov_intl
+    name: 각국 정부·국제기구 보도자료
+    tier: press
+    examples: 정상회담, 국제기구 행사
+    conditions: 배포처가 안내한 보도 조건에 따라 사용
+    licenses: [press, CC-BY-4.0, PD]
+    scope_required: true
+    credit: "사진: {provider} 제공"
+  - key: organizer
+    name: 협회·단체·주최측 보도용 사진
+    tier: press
+    examples: 경기, 행사, 시상식
+    conditions: 배포처가 안내한 보도 조건에 따라 사용
+    licenses: [press]
+    scope_required: true
+    credit: "사진: {provider} 제공"
+
+# 분야별 이미지 찾는 순서. 1순위부터 확인하고, 없으면 다음 순위로 넘어간다.
+# stock = unsplash → pexels → pixabay
+priority:
+  politics: [kogl, official, own]
+  economy:  [newsroom, prwire, stock]
+  tech:     [newsroom, stock, own]
+  science:  [eurekalert, oa_paper, own]
+  space:    [nasa, esa_hubble, esa, commons]
+  health:   [nih, kogl, eurekalert, stock]
+  climate:  [noaa, nasa, kogl, own]
+  culture:  [organizer, kogl, stock]
+  world:    [gov_intl, commons, own]
+  society:  [kogl, stock, own]
+
+# 글의 분야(section) → 이미지 분야. 과학기술은 아래 낱말로 다시 나눈다.
+section_fields:
+  politics: politics
+  economy: economy
+  society: society
+  world: world
+  culture: culture
+  none: society
+  scitech: [space, health, climate, tech, science]   # 낱말이 맞는 첫 분야, 없으면 science
+
+field_keywords:
+  space:   [우주, 위성, 발사체, 로켓, 달 탐사, 화성, 천문, 망원경, 은하, 행성, 혜성, 소행성, NASA, 누리호, 우주정거장]
+  health:  [의료, 질병, 감염, 백신, 병원, 환자, 보건, 의대, 치료제, 바이러스, 건강보험, 식약처, 질병관리청]
+  climate: [기후, 폭염, 한파, 태풍, 홍수, 가뭄, 탄소, 온실가스, 해수면, 미세먼지, 기상청, 엘니뇨, 빙하]
+  tech:    [반도체, 인공지능, AI, 스마트폰, 배터리, 플랫폼, 소프트웨어, 데이터센터, 통신, 로봇, 전기차, 칩]
+  science: [연구팀, 연구진, 논문, 교수, 실험, 학술지, 연구소, 발견]
+  culture: [경기, 대회, 리그, 올림픽, 월드컵, 시상식, 영화, 공연, 전시, 축제, 선수]

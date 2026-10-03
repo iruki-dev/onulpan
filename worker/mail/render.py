@@ -39,6 +39,26 @@ SANS = "'IBM Plex Sans KR','Apple SD Gothic Neo','Malgun Gothic',sans-serif"
 SERIF = "Hahmlet,'Noto Serif KR','Apple SD Gothic Neo',serif"
 
 
+def lead_images(conn: psycopg.Connection, seqs: list[int], base: str) -> dict[int, dict]:
+    """실을 수 있는(승인된) 대표 이미지. 권리자 요청으로 내린 이미지는 status가 바뀌어 빠진다."""
+    from ..images.policy import license_info, license_label
+
+    if not seqs:
+        return {}
+    rows = conn.execute(
+        """SELECT pi.post_seq, i.id, i.hotlink, i.file_url, i.alt, i.credit, i.license, i.license_url
+           FROM post_images pi JOIN images i ON i.id = pi.image_id
+           WHERE pi.post_seq = ANY(%s) AND pi.status = 'active' AND pi.role = 'lead' AND i.status = 'active'
+             AND (i.stored_path IS NOT NULL OR i.hotlink)""",
+        (seqs,),
+    ).fetchall()
+    return {r["post_seq"]: {
+        "src": r["file_url"] if r["hotlink"] else f"{base}/img/{r['id']}", "alt": r["alt"], "credit": r["credit"],
+        "license_url": r["license_url"], "license_label": license_label(r["license"]),
+        "link_required": bool((license_info(r["license"]) or {}).get("link_required")),
+    } for r in rows}
+
+
 def render_edition(conn: psycopg.Connection, edition_id: int) -> RenderedEmail:
     ed = conn.execute(
         "SELECT e.*, u.email FROM editions e JOIN users u ON u.id = e.user_id WHERE e.id = %s", (edition_id,)
@@ -64,6 +84,7 @@ def render_edition(conn: psycopg.Connection, edition_id: int) -> RenderedEmail:
         return [posts[x["seq"]] for x in ed["slots"] if x["slot"] == name and x.get("seq") in posts]
 
     catchup, front, issues, briefs = slot("catchup"), slot("front"), slot("issue"), slot("brief")
+    lead_imgs = lead_images(conn, [p["seq"] for p in front[:1]], base)
     sec_items, background, culture = slot("section"), slot("background"), slot("culture")
     counted = catchup + front + issues + sec_items + background + culture
     minutes = sum(max(1, round((p["char_count"] or 0) / 550)) for p in counted) + -(-len(briefs) * 130 // 550)
@@ -114,8 +135,18 @@ def render_edition(conn: psycopg.Connection, edition_id: int) -> RenderedEmail:
             last = i == len(front) - 1
             border = "" if last else f"border-bottom:1px solid {LINE};"
             size = "24px;line-height:1.4" if i == 0 else "22px;line-height:1.42"
-            h.append(f'<div style="padding:{16 if i == 0 else 24}px 0 28px;{border}">'
-                     f'<div style="font-size:13px;font-weight:600;margin-bottom:8px">'
+            h.append(f'<div style="padding:{16 if i == 0 else 24}px 0 28px;{border}">')
+            img = lead_imgs.get(p["seq"])
+            if img:
+                # 지정 크레딧을 이미지 바로 아래에. 자르지 않고 원본 비율 그대로
+                lic = (f' · <a href="{E(img["license_url"])}" style="color:{INK3}">{E(img["license_label"])}</a>'
+                       if img["link_required"] and img["license_url"] else "")
+                h.append(f'<div style="margin:0 0 20px"><a href="{url}"><img src="{E(img["src"])}" alt="{E(img["alt"])}" '
+                         f'width="544" style="display:block;width:100%;max-width:544px;height:auto;border:0;border-radius:12px;'
+                         f'background:{FILL}"></a><div style="margin-top:8px;font-size:12px;line-height:1.5;color:{INK3}">'
+                         f'{E(img["credit"])}{lic}</div></div>')
+                t.append(f"[{img['credit']}]")
+            h.append(f'<div style="font-size:13px;font-weight:600;margin-bottom:8px">'
                      f'<span style="color:{INK3}">{i + 1:02d}</span>&#160;&#160;'
                      f'<span style="color:{ACCENT}">{E(SECTION_KO.get(p["section"], ""))}</span></div>'
                      f'<h2 style="margin:0 0 12px;font-family:{SERIF};font-size:{size}">{link(url, p["title"])}</h2>')

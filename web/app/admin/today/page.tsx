@@ -48,10 +48,19 @@ export default async function AdminToday() {
   const budget = budgetUsd();
   const ratio = cost ? cost.month / budget : 0;
   const zero = outlets.filter((o) => o.n_24h === 0);
+  const imgs = (await one<{ pending: number; requests: number }>(
+    `SELECT (SELECT count(*)::int FROM images WHERE status = 'pending') AS pending,
+            (SELECT count(*)::int FROM image_requests WHERE status = 'open') AS requests`,
+  )) ?? { pending: 0, requests: 0 };
 
   return (
     <>
       <h1>오늘 {today}</h1>
+      {(imgs.pending > 0 || imgs.requests > 0) && (
+        <p className="notice">
+          <Link href="/admin/images?tab=requests">권리자 요청 {imgs.requests}건</Link> · <Link href="/admin/images">이미지 승인 대기 {imgs.pending}장</Link>
+        </p>
+      )}
 
       <h2 className="section-head">1. 초안 검토 ({drafts.length}) — 06:20까지 손대지 않은 초안은 자동 게시</h2>
       {drafts.length === 0 && <p className="muted">검토할 초안이 없습니다.</p>}

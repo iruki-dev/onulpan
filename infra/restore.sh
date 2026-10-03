@@ -11,4 +11,8 @@ systemctl stop onulpan.target || true
 sudo -u postgres pg_restore --clean --if-exists --no-owner --role=onulpan -d onulpan /tmp/restore.dump
 sudo -u postgres psql -d onulpan -c "REASSIGN OWNED BY postgres TO onulpan" >/dev/null || true
 rm -f /tmp/restore.dump
+# 이미지 파일
+if [[ -n "${IMAGE_DIR:-}" ]]; then
+  mkdir -p "$IMAGE_DIR" && $AWS s3 sync "s3://$R2_BUCKET/images/" "$IMAGE_DIR" --only-show-errors && chown -R onulpan:onulpan "$IMAGE_DIR"
+fi
 echo "복원 완료: $LATEST — systemctl start onulpan.target 후 Cloudflare DNS 전환"

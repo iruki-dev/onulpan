@@ -158,6 +158,15 @@ class FakeLLM:
         model = params["model"]
         if "semantic" in str(params.get("system")) or "사실 확인 담당자" in str(params.get("system")):
             return LLMResult(text='{"unsupported": []}', model=model, usage=Usage(800, 20))
+        if "사진부" in str(params.get("system")):
+            content = params["messages"][0]["content"]
+            if isinstance(content, list):          # 사진 대조
+                return LLMResult(text='{"match": true, "reason": "기사 대상과 같은 장면"}', model=model, usage=Usage(1200, 20))
+            title = re.search(r"제목: (.+)", content).group(1)
+            field = "space" if re.search(r"우주|위성|NASA|발사", content) else "society"
+            brief = {"field": field, "subject": "concept", "query_en": "news", "query_ko": title[:12],
+                     "alt": f"{title[:20]} 관련 사진"}
+            return LLMResult(text=json.dumps(brief, ensure_ascii=False), model=model, usage=Usage(400, 60))
         if "같은 사건" in str(params.get("system")):
             return LLMResult(text='{"same_event": false}', model=model, usage=Usage(300, 10))
         draft = self._draft(params)

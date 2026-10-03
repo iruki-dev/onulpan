@@ -9,6 +9,7 @@ import { ReportForm } from "@/components/ReportForm";
 import { ShareButton } from "@/components/ShareButton";
 import { Tracker } from "@/components/Tracker";
 import { GROUP_KO, KIND_KO } from "@/lib/labels";
+import { leadImages } from "@/lib/images";
 import { conflictsOf, getLater, getOutgoingLinks, getPost, getSources, topicFlow } from "@/lib/posts";
 
 type Props = { params: Promise<{ seq: string }> };
@@ -39,8 +40,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function PostPage({ params }: Props) {
   const post = await load((await params).seq);
   if (!post) notFound();
-  const [links, sources, later, flow] = await Promise.all([
-    getOutgoingLinks([post.seq]), getSources([post.seq]), getLater(post.seq, post.slug), topicFlow(post.slug),
+  const [links, sources, later, flow, images] = await Promise.all([
+    getOutgoingLinks([post.seq]), getSources([post.seq]), getLater(post.seq, post.slug), topicFlow(post.slug), leadImages([post.seq]),
   ]);
   const src = sources.get(post.seq) ?? [];
   const groups = new Set(src.map((s) => s.grp));
@@ -63,7 +64,8 @@ export default async function PostPage({ params }: Props) {
       <ArticleReading seq={post.seq} />
 
       <div className="page">
-        <ArticleView post={post} links={links.get(post.seq)} conflicts={conflictsOf(post, src)} later={later} outletOf={outletOf} />
+        <ArticleView post={post} links={links.get(post.seq)} conflicts={conflictsOf(post, src)} later={later} outletOf={outletOf}
+          image={images.get(post.seq)} />
         {post.kind === "issue" && (
           <div className="btn-row" style={{ padding: "24px 0 8px" }}>
             <a href={`/card/${post.seq}`} className="btn secondary" target="_blank" data-track="card_view">카드로 저장</a>

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { frontScores, type Slot } from "@/lib/editions";
+import { leadImages } from "@/lib/images";
 import { NOTICE_KO, SECTION_KO } from "@/lib/labels";
 import { conflictsOf, correctedSeqs, getOutgoingLinks, getPosts, getSources, minutesOf, type Post } from "@/lib/posts";
 import { kstDateLabel } from "@/lib/time";
@@ -12,8 +13,10 @@ const BRIEF_MIN = 1;
 
 export async function EditionView({ date, slots }: { date: string; slots: Slot[]; editionId?: number }) {
   const seqs = slots.filter((s) => s.seq).map((s) => s.seq!);
-  const [posts, links, sources, corrected, scores] = await Promise.all([
+  const leadSeq = slots.find((s) => s.slot === "front" && s.seq)?.seq;
+  const [posts, links, sources, corrected, scores, images] = await Promise.all([
     getPosts(seqs), getOutgoingLinks(seqs), getSources(seqs), correctedSeqs(seqs), frontScores(date),
+    leadImages(leadSeq ? [leadSeq] : []),
   ]);
   const of = (slot: string) => slots.filter((s) => s.slot === slot && s.seq && posts.has(s.seq)).map((s) => posts.get(s.seq!)!);
   const catchup = of("catchup"), front = of("front"), issue = of("issue"), briefs = of("brief");
@@ -31,7 +34,7 @@ export async function EditionView({ date, slots }: { date: string; slots: Slot[]
   const notices = slots.filter((s) => s.slot === "notice").map((s) => NOTICE_KO[s.code ?? ""] ?? s.code);
 
   const story = (p: Post, num?: number, lead?: boolean, inSection?: boolean) => (
-    <Story key={p.seq} post={p} num={num} lead={lead} inSection={inSection} links={links.get(p.seq)} conflicts={conflictsOf(p, sources.get(p.seq))}
+    <Story key={p.seq} post={p} num={num} lead={lead} inSection={inSection} image={lead ? images.get(p.seq) : undefined} links={links.get(p.seq)} conflicts={conflictsOf(p, sources.get(p.seq))}
       corrected={corrected.has(p.seq)} niche={nicheSeqs.has(p.seq)} />
   );
 

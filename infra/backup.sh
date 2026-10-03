@@ -17,6 +17,10 @@ cd "$APP"
 pg_dump --format=custom --no-owner "$DATABASE_URL" -f "$FILE" || fail "pg_dump"
 $AWS s3 cp "$FILE" "s3://$R2_BUCKET/daily/onulpan-$STAMP.dump" --only-show-errors || fail "R2 업로드"
 rm -f "$FILE"
+# 이미지 파일: 내용 주소(sha256) 경로라 덮어쓰지 않는다. 내린 이미지도 권리자 협의 기록으로 남긴다
+if [[ -d "${IMAGE_DIR:-}" ]]; then
+  $AWS s3 sync "$IMAGE_DIR" "s3://$R2_BUCKET/images/" --only-show-errors || fail "이미지 R2 동기화"
+fi
 CUTOFF=$(date -u -d '30 days ago' +%Y%m%d)
 $AWS s3 ls "s3://$R2_BUCKET/daily/" | awk '{print $4}' | while read -r key; do
   d=$(echo "$key" | sed -E 's/onulpan-([0-9]{8}).*/\1/')

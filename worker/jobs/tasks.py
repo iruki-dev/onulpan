@@ -7,6 +7,7 @@
 | 03:00           | 원문 본문 30일 경과분 비우기, 사용량 집계 (백업은 infra/backup.sh) |
 | 04:30           | 쟁점 정리 1편 선정·즉시 생성                            |
 | 06:20           | 베타: 손대지 않은 초안 자동 게시                        |
+| 06:22, 15분마다(5분 어긋나게) | 최근 글의 대표 이미지 찾기 (docs/images.md)  |
 | 06:25           | 1면 선정 (전 사용자 공통)                               |
 | 06:30           | 이메일 수신자 전원의 조간 사전 조립 → editions          |
 | 07:00~10:50     | 10분마다 설정 시각별 이메일 발송, 실패분은 10분 뒤 1회 재시도 |
@@ -25,6 +26,7 @@ from ..editor import assemble as editor
 from ..editor.front_page import select_front
 from ..generate import batch
 from ..generate.gateway import AnthropicLLM, LLMClient, budget_state
+from ..images import picker as images
 from ..mail.render import render_edition
 from ..mail.sender import get_sender, send_login_link
 from ..ops import alerts, maintenance, reports
@@ -248,6 +250,15 @@ def culture_week(conn: psycopg.Connection, s: Settings, now: datetime) -> dict:
     return out
 
 
+# ── 이미지 ─────────────────────────────────────────
+
+def find_images(conn: psycopg.Connection, s: Settings, now: datetime) -> dict:
+    llm = get_llm()
+    if llm is not None and budget_state(conn, s).blocked:
+        llm = None                                   # 예산 초과: 낱말 규칙으로만 검색어를 만든다
+    return images.run(conn, s, now, llm=llm)
+
+
 # ── 작업 큐 (웹이 넣는 요청) ─────────────────────────
 
 def handle_job(conn: psycopg.Connection, s: Settings, job: dict, now: datetime) -> dict:
@@ -271,6 +282,20 @@ def handle_job(conn: psycopg.Connection, s: Settings, job: dict, now: datetime) 
             triggers.after_publish(conn, seq, now, s)
         conn.commit()
         return {"seq": seq}
+    if t == "fetch_image":                       # 관리 화면에서 등록한 이미지 받기
+        return images.fetch_registered(conn, s, int(p["image_id"]), now, p.get("attach_seq"))
+    if t == "find_image":                        # 관리 화면: 다른 후보 찾기
+        post = conn.execute(
+            """SELECT seq, kind::text AS kind, section::text AS section, slug, title, summary, body_md
+               FROM posts WHERE seq = %s""", (int(p["post_seq"]),)).fetchone()
+        r = images.find_for_post(conn, s, post, now, llm=get_llm(), exclude=set(p.get("exclude") or []))
+        conn.commit()
+        return r
+    if t == "image_request":                     # 권리자 요청 접수 (웹이 이미 내림)
+        return images.handle_request(conn, s, int(p["request_id"]), now, sender=get_sender(s["email"]["from"]),
+                                     llm=get_llm())
+    if t == "image_reply":                       # 처리 결과 회신
+        return {"message_id": images.send_reply(conn, int(p["request_id"]), get_sender(s["email"]["from"]))}
     if t == "send_login_email":
         return {"message_id": send_login_link(get_sender(s["email"]["from"]), p["email"], p["url"])}
     raise ValueError(f"unknown job type {t}")
