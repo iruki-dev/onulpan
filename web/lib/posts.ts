@@ -18,14 +18,17 @@ export type Post = {
   verify_report: Record<string, any>;
   created_at: Date;
   n_sources?: number;
+  n_outlets?: number;
 };
 
-export type Source = { post_seq: number; outlet: string; grp: string; url: string; title: string };
+export type Source = { post_seq: number; raw_article_id: number; outlet: string; grp: string; url: string; title: string };
 export type Link = { from_seq: number; to_seq: number; rel: string; anchor_text: string | null; slug: string | null; to_title: string; to_kind: string };
 
 const COLS = `p.seq, p.id, p.kind::text AS kind, p.section::text AS section, p.slug, p.title, p.summary, p.body_md,
   p.char_count, p.meta, p.importance, p.model, p.prompt_version, p.verify_report, p.created_at,
-  (SELECT count(*) FROM post_sources s WHERE s.post_seq = p.seq) AS n_sources`;
+  (SELECT count(*) FROM post_sources s WHERE s.post_seq = p.seq) AS n_sources,
+  COALESCE((p.meta->'cluster'->>'n_outlets')::int,
+           (SELECT count(DISTINCT outlet_id) FROM post_sources s WHERE s.post_seq = p.seq)) AS n_outlets`;
 
 export async function getPost(seq: number): Promise<Post | null> {
   return one<Post>(`SELECT ${COLS} FROM posts p WHERE p.seq = $1`, [seq]);
@@ -41,7 +44,7 @@ export async function getSources(seqs: number[]): Promise<Map<number, Source[]>>
   const out = new Map<number, Source[]>();
   if (!seqs.length) return out;
   const rows = await q<Source>(
-    `SELECT s.post_seq, o.name AS outlet, o.grp::text AS grp, s.url, s.title
+    `SELECT s.post_seq, s.raw_article_id, o.name AS outlet, o.grp::text AS grp, s.url, s.title
      FROM post_sources s JOIN outlets o ON o.id = s.outlet_id
      WHERE s.post_seq = ANY($1::bigint[]) ORDER BY o.name, s.raw_article_id`,
     [seqs],
@@ -92,4 +95,32 @@ export async function correctedSeqs(seqs: number[]): Promise<Set<number>> {
 
 export async function slugInfo(slug: string) {
   return one<{ slug: string; display_name: string; created_at: Date }>("SELECT * FROM slugs WHERE slug = $1", [slug]);
+}
+
+/** 읽는 시간(분): 분당 550자 */
+export function minutesOf(chars: number): number {
+  return Math.max(1, Math.round(chars / 550));
+}
+
+export type Conflict = { field: string; rows: { value: string; who: string }[] };
+
+/** 생성 출력의 conflicts(source_id = r_<원문 id>)를 언론사 이름으로 바꾼다 */
+export function conflictsOf(post: Post, sources: Source[] | undefined): Conflict[] {
+  const outletOf = new Map((sources ?? []).map((s) => [`r_${s.raw_article_id}`, s.outlet]));
+  const list = (post.meta.conflicts ?? []) as { field: string; values: { value: string; source_id: string }[] }[];
+  return list.map((c) => {
+    const byValue = new Map<string, string[]>();
+    for (const v of c.values) byValue.set(v.value, [...(byValue.get(v.value) ?? []), outletOf.get(v.source_id) ?? "출처"]);
+    return { field: c.field, rows: [...byValue.entries()].map(([value, who]) => ({ value, who: [...new Set(who)].join(" · ") })) };
+  });
+}
+
+export type FlowItem = { seq: number; kind: string; title: string; created_at: Date };
+
+export async function topicFlow(slug: string | null, limit = 6): Promise<FlowItem[]> {
+  if (!slug) return [];
+  return q<FlowItem>(
+    "SELECT seq, kind::text AS kind, title, created_at FROM posts WHERE slug = $1 ORDER BY seq DESC LIMIT $2",
+    [slug, limit],
+  );
 }

@@ -17,7 +17,7 @@ export function Checkout({ clientKey, createOrder }: { clientKey: string; create
   return (
     <>
       <Script src="https://js.tosspayments.com/v2/standard" onLoad={() => setReady(true)} />
-      <button
+      <button className="btn block"
         type="button"
         disabled={!ready || busy}
         onClick={async () => {
@@ -39,7 +39,7 @@ export function Checkout({ clientKey, createOrder }: { clientKey: string; create
           }
         }}
       >
-        {busy ? "결제 창을 여는 중…" : "창립 멤버로 선결제하기"}
+        {busy ? "결제 창을 여는 중…" : "창립 멤버 되기"}
       </button>
     </>
   );

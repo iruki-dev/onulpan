@@ -50,3 +50,14 @@ export async function latestFront(date?: string): Promise<Front | null> {
     ? one<Front>("SELECT * FROM front_pages WHERE edition_date <= $1 ORDER BY edition_date DESC, id DESC LIMIT 1", [date])
     : one<Front>("SELECT * FROM front_pages ORDER BY edition_date DESC, id DESC LIMIT 1");
 }
+
+export type Score = { seq: number; title: string; score: number; picked: boolean };
+
+/** 그날 1면 선정 기록(상위 후보 점수) — decision_log(kind='select') */
+export async function frontScores(date: string, n = 5): Promise<Score[]> {
+  const row = await one<{ payload: { top: Score[] } }>(
+    "SELECT payload FROM decision_log WHERE kind = 'select' AND ref = $1 ORDER BY id DESC LIMIT 1",
+    [`front:${date}`],
+  );
+  return (row?.payload.top ?? []).slice(0, n);
+}

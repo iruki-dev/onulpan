@@ -7,7 +7,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   await requireAdmin();
   return (
     <div className="admin">
-      <nav className="top" style={{ margin: "16px 0" }}>
+      <nav className="sub" aria-label="관리">
         <Link href="/admin/today">오늘</Link>
         <Link href="/admin/drafts">초안</Link>
         <Link href="/admin/reports">제보·정정</Link>

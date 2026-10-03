@@ -1,35 +1,36 @@
-// 쟁점 정리는 고정 틀로 렌더링한다. 틀이 고정이어야 카드 이미지 자동 생성이 가능하다.
+// 쟁점 정리는 고정 틀로 렌더링한다 (카드 이미지 자동 생성과 같은 틀).
 type Position = { holder: string; claim: string; grounds: string; source_ids?: string[] };
 export type IssueSections = { facts: string[]; question: string; positions: Position[]; unknowns: string[] };
 
-export function IssueView({ sections }: { sections: IssueSections }) {
+export function IssueView({ sections, outletOf }: { sections: IssueSections; outletOf?: Map<string, string> }) {
+  const names = (ids?: string[]) =>
+    [...new Set((ids ?? []).map((i) => outletOf?.get(i)).filter(Boolean))].join(" · ");
   return (
-    <div className="issue">
-      <section>
-        <h4>확인된 사실</h4>
-        <ul>{sections.facts.map((f, i) => <li key={i}>{f}</li>)}</ul>
+    <>
+      <nav className="tabs" aria-label="목차">
+        <a href="#facts">사실</a><a href="#positions">입장</a><a href="#unknowns">남은 질문</a>
+      </nav>
+      <section id="facts" className="section" style={{ paddingBottom: 24 }}>
+        <h2 className="section-title" style={{ marginBottom: 8 }}>확인된 사실</h2>
+        <ul className="dots">{sections.facts.map((f, i) => <li key={i}>{f}</li>)}</ul>
       </section>
-      <section className="issue-question">
-        <h4>쟁점</h4>
-        <p>{sections.question}</p>
+      <div className="band" />
+      <section id="positions" className="section" style={{ paddingBottom: 28 }}>
+        <h2 className="section-title" style={{ marginBottom: 20 }}>입장</h2>
+        {sections.positions.map((p, i) => (
+          <article key={i} className="position">
+            <div className="who"><span className="n tnum">{i + 1}</span>{p.holder}</div>
+            <p className="claim">{p.claim}</p>
+            <p className="grounds">{p.grounds}</p>
+            {names(p.source_ids) && <span className="src">{names(p.source_ids)}</span>}
+          </article>
+        ))}
       </section>
-      <section>
-        <h4>입장</h4>
-        <div className="positions">
-          {sections.positions.map((p, i) => (
-            <div key={i} className="position">
-              <p className="holder">{p.holder}</p>
-              <p className="claim">{p.claim}</p>
-              <p className="grounds"><span>근거</span> {p.grounds}</p>
-            </div>
-          ))}
-        </div>
-        <p className="muted small">입장은 기사에 나온 순서대로 싣습니다. 어느 쪽이 옳은지 판단하지 않습니다.</p>
+      <div className="band" />
+      <section id="unknowns" className="section" style={{ paddingBottom: 24 }}>
+        <h2 className="section-title" style={{ marginBottom: 8 }}>남은 질문</h2>
+        <ul className="dots qs">{sections.unknowns.map((f, i) => <li key={i}>{f}</li>)}</ul>
       </section>
-      <section>
-        <h4>아직 모르는 것</h4>
-        <ul>{sections.unknowns.map((f, i) => <li key={i}>{f}</li>)}</ul>
-      </section>
-    </div>
+    </>
   );
 }

@@ -13,23 +13,28 @@ export function anchorsFrom(links: PostLink[] | undefined): Anchor[] {
     }));
 }
 
-export function Body({ text, links, from }: { text: string; links?: PostLink[]; from: number }) {
-  const paras = linkify(paragraphs(text), anchorsFrom(links));
+/** 본문 문단. 용어 링크는 글 전체 기준으로 처음 한 번만 걸고, start~end 문단만 그린다. */
+export function Paragraphs({ text, links, from, start = 0, end }: {
+  text: string; links?: PostLink[]; from: number; start?: number; end?: number;
+}) {
+  const paras = linkify(paragraphs(text), anchorsFrom(links)).slice(start, end);
   return (
-    <div className="body">
+    <>
       {paras.map((segs, i) => (
-        <p key={i}>
+        <p key={start + i}>
           {segs.map((s, j) =>
             s.href ? (
-              <Link key={j} href={s.href} title={s.title} className="term" data-track="link_click" data-from={from} data-to={s.toSeq}>
-                {s.text}
-              </Link>
+              <Link key={j} href={s.href} className="term" data-track="link_click" data-from={from} data-to={s.toSeq}>{s.text}</Link>
             ) : (
               <span key={j}>{s.text}</span>
             ),
           )}
         </p>
       ))}
-    </div>
+    </>
   );
+}
+
+export function paragraphCount(text: string): number {
+  return paragraphs(text).length;
 }

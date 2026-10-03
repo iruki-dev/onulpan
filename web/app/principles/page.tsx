@@ -22,7 +22,7 @@ export default async function PrinciplesPage() {
   const contact = process.env.FOUNDER_EMAIL ?? "editor@onulpan.kr";
 
   return (
-    <article className="principles">
+    <article className="page prose-doc principles">
       <h1>오늘판 편집 원칙</h1>
       <p>
         오늘판의 모든 글은 인공지능이 여러 언론 보도를 종합해 씁니다. 이 문서는 그 인공지능이 무엇을 쓰고 무엇을 쓰지 않는지,

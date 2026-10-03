@@ -1,5 +1,7 @@
 import Link from "next/link";
+import { Chevron } from "@/components/Icons";
 import { q } from "@/lib/db";
+import { PRESET_KO } from "@/lib/labels";
 import { currentUser } from "@/lib/session";
 import { kstDateLabel } from "@/lib/time";
 
@@ -20,28 +22,41 @@ export default async function ArchivePage() {
      ORDER BY f.edition_date DESC LIMIT 30`,
   );
   return (
-    <>
-      <h1>지난 조간</h1>
+    <div className="page">
+      <div className="page-head">
+        <h1 className="page-title">지난 조간</h1>
+      </div>
       {mine.length > 0 && (
-        <section>
-          <h2 className="section-head">내가 받은 조간</h2>
-          <ul>
+        <>
+          <section className="section" style={{ paddingTop: 0 }}>
+            <div className="section-head"><h2 className="section-title">내 조간</h2></div>
             {mine.map((e) => (
-              <li key={e.id}><Link href={`/e/${e.id}`}>{kstDateLabel(e.edition_date)}</Link></li>
+              <Link key={e.id} href={`/e/${e.id}`} className="cell">
+                <span className="body">
+                  <span className="main">{kstDateLabel(e.edition_date)}</span>
+                  <span className="under">{PRESET_KO[e.preset] ?? ""}</span>
+                </span>
+                <Chevron size={18} className="chev" />
+              </Link>
             ))}
-          </ul>
-        </section>
+          </section>
+          <div className="band" style={{ marginTop: 20 }} />
+        </>
       )}
-      <section>
-        <h2 className="section-head">날짜별 1면</h2>
-        {fronts.length === 0 && <p className="muted">아직 없습니다.</p>}
+      <section className="section" style={mine.length ? undefined : { paddingTop: 0 }}>
+        <div className="section-head"><h2 className="section-title">날짜별 1면</h2></div>
+        {fronts.length === 0 && <p className="muted">아직 없어요.</p>}
         {fronts.map((f) => (
-          <div key={f.edition_date} className="post">
-            <p className="kicker"><Link href={`/front/${f.edition_date}`}>{kstDateLabel(f.edition_date)}</Link></p>
-            <ul>{f.titles.map((t, i) => <li key={i}>{t}</li>)}</ul>
-          </div>
+          <Link key={f.edition_date} href={`/front/${f.edition_date}`} className="cell" style={{ alignItems: "flex-start" }}>
+            <span className="body">
+              <span className="over">{kstDateLabel(f.edition_date)}</span>
+              {f.titles.map((t, i) => <span key={i} className={i === 0 ? "main" : "under"}>{t}</span>)}
+            </span>
+            <Chevron size={18} className="chev" />
+          </Link>
         ))}
       </section>
-    </>
+      <div style={{ height: 32 }} />
+    </div>
   );
 }

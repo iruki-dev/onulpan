@@ -1,11 +1,12 @@
 import Link from "next/link";
 import { EditionView } from "@/components/EditionView";
-import { PostArticle } from "@/components/PostArticle";
+import { Kakao } from "@/components/Icons";
 import { RefreshSoon } from "@/components/RefreshSoon";
 import { Tracker } from "@/components/Tracker";
-import { q } from "@/lib/db";
 import { advanceCursor, latestEdition, latestFront, requestAssembly } from "@/lib/editions";
-import { correctedSeqs, getOutgoingLinks, getPosts } from "@/lib/posts";
+import { SECTION_KO } from "@/lib/labels";
+import { enabledProviders } from "@/lib/oauth";
+import { getPosts } from "@/lib/posts";
 import { currentUser } from "@/lib/session";
 import { kstDateLabel, kstToday } from "@/lib/time";
 
@@ -18,12 +19,14 @@ export default async function TodayPage() {
     if (!ed) {
       await requestAssembly(user.id);
       return (
-        <>
+        <div className="page">
           <RefreshSoon />
-          <p className="dateline">{kstDateLabel(today)}</p>
-          <h1>오늘의 조간을 준비하고 있습니다</h1>
-          <p className="muted">설정한 분량과 관심 분야에 맞춰 지면을 짜는 중입니다. 몇 초면 끝납니다.</p>
-        </>
+          <section className="page-head">
+            <div className="date">{kstDateLabel(today)}</div>
+            <h1 className="page-title">오늘의 조간을 짜고 있어요</h1>
+            <p className="page-sub">몇 초면 끝나요.</p>
+          </section>
+        </div>
       );
     }
     await advanceCursor(user.id, ed.as_of_seq);
@@ -35,52 +38,40 @@ export default async function TodayPage() {
     );
   }
 
-  // 로그인하지 않은 독자: 모두에게 같은 1면과 오늘의 쟁점
+  // 로그인하지 않은 독자: 소개 + 모두에게 같은 오늘 1면
   const front = await latestFront(today);
-  const seqs = front ? [...front.seqs, ...(front.issue_seq ? [front.issue_seq] : [])] : [];
-  const [posts, links, corrected] = await Promise.all([getPosts(seqs), getOutgoingLinks(seqs), correctedSeqs(seqs)]);
-  const recent = await q<{ seq: number; title: string; kind: string; slug: string | null }>(
-    `SELECT DISTINCT ON (slug) seq, title, kind::text AS kind, slug FROM posts
-     WHERE kind IN ('synthesis','explainer') ORDER BY slug, seq DESC LIMIT 12`,
-  );
+  const posts = await getPosts(front?.seqs ?? []);
+  const kakao = enabledProviders().includes("kakao");
   return (
-    <>
-      <Tracker page="public_front" />
-      <p className="dateline">{kstDateLabel(front?.edition_date ?? today)} · 모든 독자에게 같은 1면</p>
-      {front ? (
-        <>
-          <section className="front">
-            <h2 className="section-head">1면</h2>
-            {front.seqs.filter((s) => posts.has(s)).map((s) => (
-              <PostArticle key={s} post={posts.get(s)!} links={links.get(s)} corrected={corrected.has(s)} />
-            ))}
-          </section>
-          {front.issue_seq && posts.has(front.issue_seq) && (
-            <section>
-              <h2 className="section-head">오늘의 쟁점</h2>
-              <PostArticle post={posts.get(front.issue_seq)!} links={links.get(front.issue_seq)} />
-            </section>
-          )}
-          <p><Link href={`/front/${front.edition_date}`}>1면은 이렇게 골랐습니다 →</Link></p>
-        </>
-      ) : (
-        <p className="muted">아직 발행된 1면이 없습니다.</p>
-      )}
-      <div className="cta">
-        <h2 style={{ marginTop: 0 }}>나만의 아침 조간</h2>
-        <p>10분·25분·40분 중 읽을 분량을 고르면, 1면 뒤로 관심 분야의 소식을 그만큼만 채워 매일 아침 이메일로 보내드립니다.</p>
-        <Link href="/login" className="button">무료로 받아보기</Link>
-      </div>
-      {recent.length > 0 && (
-        <section>
-          <h2 className="section-head">위키: 지금 이 주제는</h2>
-          <ul>
-            {recent.map((r) => (
-              <li key={r.seq}><Link href={r.slug ? `/w/${encodeURIComponent(r.slug)}` : `/p/${r.seq}`}>{r.title}</Link></li>
-            ))}
-          </ul>
+    <div className="page">
+      <Tracker page="landing" />
+      <section className="hero">
+        <h1>아침마다 한 부,<br />다 읽으면 끝나는 뉴스</h1>
+        <p>여러 언론사의 보도를 모아 사실만 정리해 드려요.</p>
+      </section>
+      {front && posts.size > 0 && (
+        <section className="preview" aria-label="오늘 아침 1면">
+          {front.seqs.filter((s) => posts.has(s)).map((s, i) => {
+            const p = posts.get(s)!;
+            return (
+              <Link key={s} href={`/p/${s}`}>
+                <span className="num tnum">{String(i + 1).padStart(2, "0")}</span>
+                <span><strong>{p.title}</strong><small>{SECTION_KO[p.section]} · 언론사 {p.n_outlets}곳</small></span>
+              </Link>
+            );
+          })}
         </section>
       )}
-    </>
+      <section className="values">
+        <div><span className="k">10분 · 25분 · 40분</span><strong>고른 만큼만 채워요</strong><span>끝없는 피드 대신, 정한 분량을 다 읽으면 오늘은 끝.</span></div>
+        <div><span className="k">출처 공개</span><strong>두 곳 이상 보도한 것만 써요</strong><span>모든 글에 참고한 기사와 원문 링크가 붙어요.</span></div>
+        <div><span className="k">쟁점 정리</span><strong>입장은 나란히 보여드려요</strong><span>누가 무엇을 근거로 주장하는지, 판단은 직접.</span></div>
+      </section>
+      <section className="cta">
+        {kakao && <a href="/auth/kakao" className="btn kakao block"><Kakao />카카오로 시작하기</a>}
+        <Link href="/login" className={`btn block${kakao ? " secondary" : ""}`}>이메일로 시작하기</Link>
+        <small>무료 · 광고 없음</small>
+      </section>
+    </div>
   );
 }

@@ -3,7 +3,7 @@ export const metadata = { title: "개인정보 처리방침" };
 export default function PrivacyPage() {
   const contact = process.env.FOUNDER_EMAIL ?? "editor@onulpan.kr";
   return (
-    <article>
+    <article className="page prose-doc">
       <h1>개인정보 처리방침</h1>
       <p className="muted small">세부 문구는 법무 검토를 거쳐 확정합니다. 아래는 서비스가 실제로 처리하는 항목입니다.</p>
       <h2 className="section-head">수집하는 항목과 목적</h2>
